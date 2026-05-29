@@ -1,0 +1,23 @@
+# Node.js
+node_modules
+
+
+.env
+.env.local
+.env.production
+
+# Prisma
+prisma/migrations/
+
+# logs
+logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/*
+!.vscode/settings.json

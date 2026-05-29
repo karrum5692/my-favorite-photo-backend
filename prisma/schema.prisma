@@ -1,0 +1,190 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../node_modules/@prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 유저
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique // 로그인 이메일
+  hashedPassword String? // 일반 로그인 시 사용 (구글 로그인은 null)
+  salt           String? // 일반 로그인 시 사용 (구글 로그인은 null)
+  nickname       String
+  profileImage   String?
+  point          Int      @default(0) // 현재 보유 포인트 잔액
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // 관계
+  ownedCards     PhotoCard[]     @relation("CardOwner")
+  createdCards   PhotoCard[]     @relation("CardCreator")
+  saleListings   SaleListing[]
+  tradeProposals TradeProposal[]
+  notifications  Notification[]
+  pointHistories PointHistory[]
+  oauthAccounts  OAuthAccount[]
+  refreshTokens  RefreshToken[]
+}
+
+// 구글 OAuth 연동 정보
+model OAuthAccount {
+  id         String   @id @default(uuid())
+  userId     String
+  provider   String // 'google'
+  providerId String // 구글에서 발급한 고유 ID
+  createdAt  DateTime @default(now())
+
+  // 관계
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerId]) // 같은 구글 계정 중복 방지
+}
+
+// 리프레시 토큰
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String // 저장된 refresh token
+  expiresAt DateTime // 만료 시각
+  createdAt DateTime @default(now())
+
+  // 관계
+  user User @relation(fields: [userId], references: [id])
+}
+
+// 포토카드
+model PhotoCard {
+  id          String   @id @default(uuid())
+  ownerId     String
+  creatorId   String
+  title       String
+  description String?
+  imageUrl    String
+  grade       Grade
+  genre       Genre
+  totalCount  Int
+  remainCount Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 관계
+  owner          User            @relation("CardOwner", fields: [ownerId], references: [id])
+  creator        User            @relation("CardCreator", fields: [creatorId], references: [id])
+  saleListings   SaleListing[]
+  tradeProposals TradeProposal[]
+}
+
+// 판매 등록
+model SaleListing {
+  id           String     @id @default(uuid())
+  sellerId     String
+  photoCardId  String
+  price        Int // 판매 가격 (포인트)
+  status       SaleStatus @default(SELLING) // 판매 상태
+  exchangeInfo String? // 교환 희망 카드 설명 (선택)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // 관계
+  seller         User            @relation(fields: [sellerId], references: [id])
+  photoCard      PhotoCard       @relation(fields: [photoCardId], references: [id])
+  tradeProposals TradeProposal[]
+}
+
+// 교환 제안
+model TradeProposal {
+  id            String         @id @default(uuid())
+  saleListingId String
+  proposerId    String
+  offeredCardId String
+  status        ProposalStatus @default(PENDING) // 제안 상태
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // 관계
+  saleListing SaleListing @relation(fields: [saleListingId], references: [id])
+  proposer    User        @relation(fields: [proposerId], references: [id])
+  offeredCard PhotoCard   @relation(fields: [offeredCardId], references: [id])
+}
+
+// 알림
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  message   String
+  isRead    Boolean          @default(false) // 읽음 여부
+  createdAt DateTime         @default(now())
+
+  // 관계
+  user User @relation(fields: [userId], references: [id])
+}
+
+// 포인트 내역
+model PointHistory {
+  id        String    @id @default(uuid())
+  userId    String
+  amount    Int // 양수: 적립 / 음수: 차감
+  type      PointType
+  createdAt DateTime  @default(now())
+
+  // 관계
+  user User @relation(fields: [userId], references: [id])
+}
+
+// 희귀도
+enum Grade {
+  COMMON
+  RARE
+  SUPER_RARE
+  LEGENDARY
+}
+
+// 장르
+enum Genre {
+  ALBUM // 앨범
+  SPECIAL // 특전
+  FAN_SIGN // 팬싸
+  SEASON_GREETING // 시즌그리팅
+  FAN_MEETING // 팬미팅
+  CONCERT // 콘서트
+  MD // MD
+  COLLABORATION // 콜라보
+  FAN_CLUB // 팬클럽
+  OTHER // 기타
+}
+
+enum SaleStatus {
+  SELLING // 판매 중
+  SOLD // 판매 완료
+  CANCELLED // 판매 취소
+}
+
+enum ProposalStatus {
+  PENDING // 대기 중
+  ACCEPTED // 수락됨
+  REJECTED // 거절됨
+}
+
+enum NotificationType {
+  PROPOSAL_RECEIVED // 교환 제안 받음
+  PROPOSAL_ACCEPTED // 교환 제안 수락됨
+  PROPOSAL_REJECTED // 교환 제안 거절됨
+  PURCHASE_COMPLETED // 구매 완료
+}
+
+enum PointType {
+  RANDOM_BOX // 랜덤 상자 획득
+  PURCHASE // 카드 구매 차감
+  SALE // 카드 판매 적립
+}
