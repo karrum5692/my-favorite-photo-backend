@@ -39,5 +39,8 @@
     "nodemon": "^3.1.14",
     "prettier": "^3.8.3",
     "prisma": "^6.19.3"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }
