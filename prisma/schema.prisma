@@ -4,8 +4,7 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../node_modules/@prisma/client"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -69,6 +68,12 @@ enum NotificationType {
   SOLD_OUT
 }
 
+enum NotificationRelatedType {
+  SALE_LISTING
+  TRADE_PROPOSAL
+  PURCHASE
+}
+
 enum PointType {
   RANDOM_BOX
   PURCHASE
@@ -80,18 +85,18 @@ enum PointType {
 // =====================
 
 model User {
-  id              String        @id @default(uuid())
+  id              String        @id @default(uuid()) @db.Uuid
   email           String        @unique
-  password        String? // null: OAuth 로그인 전용
-  providerId      String?       @unique // null: 일반 로그인 전용
-  providerType    ProviderType? // null: 일반 로그인 전용
+  password        String?
+  providerId      String?       @unique
+  providerType    ProviderType?
   nickname        String
   profileImageUrl String?
   createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  updatedAt       DateTime?     @updatedAt
 
-  // 관계
   point          Point?
+  pointHistories PointHistory[]
   refreshToken   RefreshToken?
   cardTemplates  CardTemplate[]
   photoCards     PhotoCard[]
@@ -100,155 +105,146 @@ model User {
   sales          Purchase[]      @relation("SellerPurchases")
   tradeProposals TradeProposal[]
   notifications  Notification[]
-  pointHistories PointHistory[]
 }
 
-// 포인트 잔액 (User와 1:1)
 model Point {
-  id        Int      @id @default(autoincrement())
-  userId    String   @unique
-  balance   Int      @default(0) // 현재 잔액
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int       @id @default(autoincrement())
+  userId      String    @unique @db.Uuid
+  balance     Int       @default(0)
+  lastEventAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
 
-  // 관계
   user User @relation(fields: [userId], references: [id])
 }
 
-// 포인트 변동 내역
 model PointHistory {
   id         Int       @id @default(autoincrement())
-  userId     String
-  purchaseId Int? // null: 구매 외 포인트 변동
-  amount     Int // 양수: 적립 / 음수: 차감
+  userId     String    @db.Uuid
+  purchaseId Int?
+  amount     Int
   type       PointType
   createdAt  DateTime  @default(now())
 
-  // 관계
   user     User      @relation(fields: [userId], references: [id])
   purchase Purchase? @relation(fields: [purchaseId], references: [id])
 }
 
-// 리프레시 토큰 (User와 1:1)
 model RefreshToken {
   id        Int      @id @default(autoincrement())
-  userId    String   @unique
+  userId    String   @unique @db.Uuid
   token     String
   expiresAt DateTime
   createdAt DateTime @default(now())
 
-  // 관계
   user User @relation(fields: [userId], references: [id])
 }
 
-// 포토카드 원형 정보
 model CardTemplate {
-  id          Int      @id @default(autoincrement())
-  creatorId   String
+  id          Int       @id @default(autoincrement())
+  creatorId   String    @db.Uuid
   title       String
   description String?
   imageUrl    String
   grade       Grade
   genre       Genre
-  totalIssued Int // 총 발행 수량
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  price       Int
+  totalIssued Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
 
-  // 관계
   creator    User        @relation(fields: [creatorId], references: [id])
   photoCards PhotoCard[]
 }
 
-// 유저가 보유한 포토카드 (같은 카드는 quantity로 관리)
 model PhotoCard {
   id         Int             @id @default(autoincrement())
   templateId Int
-  ownerId    String
-  quantity   Int             @default(1) // 보유 수량
+  ownerId    String          @db.Uuid
+  quantity   Int             @default(1)
   status     PhotoCardStatus @default(OWNED)
   createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  updatedAt  DateTime?       @updatedAt
 
-  // 관계
   template       CardTemplate    @relation(fields: [templateId], references: [id])
   owner          User            @relation(fields: [ownerId], references: [id])
   saleListings   SaleListing[]
   purchases      Purchase[]
   tradeProposals TradeProposal[]
 
-  @@unique([templateId, ownerId]) // 유저당 카드 중복 레코드 방지
-  @@index([ownerId, status]) // 내 카드 상태별 조회 최적화
+  @@unique([templateId, ownerId])
+  @@index([ownerId, status])
 }
 
-// 판매 등록
 model SaleListing {
   id                  Int        @id @default(autoincrement())
-  sellerId            String
+  sellerId            String     @db.Uuid
   photoCardId         Int
-  quantity            Int // 판매 수량
-  price               Int // 판매 가격 (포인트)
+  quantity            Int
+  remainQuantity      Int
+  price               Int
   status              SaleStatus @default(SELLING)
-  exchangeGrade       Grade? // 교환 희망 등급
-  exchangeGenre       Genre? // 교환 희망 장르
-  exchangeDescription String? // 교환 희망 상세 설명
+  exchangeGrade       Grade?
+  exchangeGenre       Genre?
+  exchangeDescription String?
   createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
+  updatedAt           DateTime?  @updatedAt
 
-  // 관계
   seller         User            @relation(fields: [sellerId], references: [id])
   photoCard      PhotoCard       @relation(fields: [photoCardId], references: [id])
   purchases      Purchase[]
   tradeProposals TradeProposal[]
 
-  // SELLING 상태일 때만 unique - 마이그레이션에서 직접 설정 필요
-  @@index([photoCardId, status])
+  // NOTE: photoCardId unique는 SELLING 상태일 때만 적용 - DB에서 partial unique index로 직접 설정 필요
+  // CREATE UNIQUE INDEX sale_listing_photocard_selling_unique
+  //   ON "SaleListing" ("photoCardId") WHERE status = 'SELLING';
 }
 
-// 구매 완료 기록
 model Purchase {
   id            Int      @id @default(autoincrement())
-  buyerId       String
-  sellerId      String
+  buyerId       String   @db.Uuid
+  sellerId      String   @db.Uuid
   photoCardId   Int
   saleListingId Int
-  quantity      Int // 구매 수량
-  price         Int // 거래 시점 가격
+  quantity      Int
+  price         Int
   createdAt     DateTime @default(now())
 
-  // 관계
-  buyer        User           @relation("BuyerPurchases", fields: [buyerId], references: [id])
-  seller       User           @relation("SellerPurchases", fields: [sellerId], references: [id])
-  photoCard    PhotoCard      @relation(fields: [photoCardId], references: [id])
-  saleListing  SaleListing    @relation(fields: [saleListingId], references: [id])
-  pointHistory PointHistory[]
+  buyer          User           @relation("BuyerPurchases", fields: [buyerId], references: [id])
+  seller         User           @relation("SellerPurchases", fields: [sellerId], references: [id])
+  photoCard      PhotoCard      @relation(fields: [photoCardId], references: [id])
+  saleListing    SaleListing    @relation(fields: [saleListingId], references: [id])
+  pointHistories PointHistory[]
 }
 
-// 교환 제안
 model TradeProposal {
   id            Int            @id @default(autoincrement())
   saleListingId Int
-  proposerId    String
+  proposerId    String         @db.Uuid
   offeredCardId Int
-  quantity      Int            @default(1) // 제안 수량
+  quantity      Int            @default(1)
   status        ProposalStatus @default(PENDING)
+  message       String?
+  completedAt   DateTime?
   createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  updatedAt     DateTime?      @updatedAt
 
-  // 관계
   saleListing SaleListing @relation(fields: [saleListingId], references: [id])
   proposer    User        @relation(fields: [proposerId], references: [id])
   offeredCard PhotoCard   @relation(fields: [offeredCardId], references: [id])
+
+  // NOTE: (saleListingId, offeredCardId, proposerId) unique는 PENDING 상태일 때만 적용
+  // CREATE UNIQUE INDEX trade_proposal_pending_unique
+  //   ON "TradeProposal" ("saleListingId", "offeredCardId", "proposerId") WHERE status = 'PENDING';
 }
 
-// 알림
 model Notification {
   id        Int              @id @default(autoincrement())
-  userId    String
+  userId    String           @db.Uuid
   type      NotificationType
   message   String
   isRead    Boolean          @default(false)
   createdAt DateTime         @default(now())
 
-  // 관계
   user User @relation(fields: [userId], references: [id])
 }
