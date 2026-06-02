@@ -83,7 +83,7 @@ export const acceptProposal = async (saleCardId, proposalId) => {
       throw new Error('카드 정보가 없습니다.');
     }
 
-    // 🔥 소유권 교환 (핵심)
+    // 소유권 교환
     await tx.photoCard.update({
       where: { id: saleCardId },
       data: { ownerId: offeredCard.ownerId },
