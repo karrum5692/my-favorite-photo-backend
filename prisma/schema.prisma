@@ -1,10 +1,10 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
 }
 
 // =====================
@@ -70,154 +70,188 @@ enum PointType {
 }
 
 // =====================
-// USER
+// TABLES
 // =====================
 
 model User {
-  id        String   @id @default(uuid()) @db.Uuid
-  email     String   @unique
-  password  String?
-  nickname  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String        @id @default(uuid()) @db.Uuid
+  email           String        @unique @db.VarChar
+  password        String?       @db.VarChar
+  providerId      String?       @unique @db.VarChar
+  providerType    ProviderType?
+  nickname        String        @db.VarChar
+  profileImageUrl String?       @db.VarChar
+  createdAt       DateTime      @default(now()) @db.Timestamp
+  updatedAt       DateTime      @updatedAt @db.Timestamp
 
-  point      Point?
-
+  // Relations
+  point          Point?
+  pointHistories PointHistory[]
+  refreshToken   RefreshToken?
+  cardTemplates  CardTemplate[]
   photoCards     PhotoCard[]
-  saleListings    SaleListing[]
-  tradeProposals  TradeProposal[]
-  notifications   Notification[]
-  cardTemplates   CardTemplate[]
+  saleListings   SaleListing[]
+  purchased      Purchase[]      @relation("BuyerPurchases")
+  sales          Purchase[]      @relation("SellerPurchases")
+  tradeProposals TradeProposal[]
+  notifications  Notification[]
 }
-
-// =====================
-// POINT
-// =====================
 
 model Point {
-  id      Int    @id @default(autoincrement())
-  userId  String @unique @db.Uuid
-  balance Int    @default(0)
+  id          Int       @id @default(autoincrement())
+  userId      String    @unique @db.Uuid
+  balance     Int       @default(0)
+  lastEventAt DateTime? @db.Timestamp
+  createdAt   DateTime  @default(now()) @db.Timestamp
+  updatedAt   DateTime  @updatedAt @db.Timestamp
 
-  user User @relation(fields: [userId], references: [id])
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// =====================
-// CARD TEMPLATE
-// =====================
+model PointHistory {
+  id         Int       @id @default(autoincrement())
+  userId     String    @db.Uuid
+  purchaseId Int?
+  amount     Int
+  type       PointType
+  createdAt  DateTime  @default(now()) @db.Timestamp
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id])
+  purchase Purchase? @relation(fields: [purchaseId], references: [id])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  userId    String   @unique @db.Uuid
+  token     String   @db.VarChar
+  expiresAt DateTime @db.Timestamp
+  createdAt DateTime @default(now()) @db.Timestamp
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 
 model CardTemplate {
   id          Int      @id @default(autoincrement())
   creatorId   String   @db.Uuid
-
-  title       String
-  description String?
-  imageUrl    String
-
+  title       String   @db.VarChar
+  description String?  @db.VarChar
+  imageUrl    String   @db.VarChar
   grade       Grade
   genre       Genre
   price       Int
   totalIssued Int
+  createdAt   DateTime @default(now()) @db.Timestamp
+  updatedAt   DateTime @updatedAt @db.Timestamp
 
-  createdAt   DateTime @default(now())
+  // Relations
+  creator User        @relation(fields: [creatorId], references: [id])
+  cards   PhotoCard[]
 
-  creator    User        @relation(fields: [creatorId], references: [id])
-  photoCards PhotoCard[]
+  // Indexes
+  @@index([creatorId])
 }
-
-// =====================
-// PHOTO CARD
-// =====================
 
 model PhotoCard {
-  id          Int             @id @default(autoincrement())
+  id         Int             @id @default(autoincrement())
+  templateId Int
+  ownerId    String          @db.Uuid
+  quantity   Int             @default(1)
+  status     PhotoCardStatus @default(OWNED)
+  createdAt  DateTime        @default(now()) @db.Timestamp
+  updatedAt  DateTime        @updatedAt @db.Timestamp
 
-  templateId  Int
-  ownerId     String         @db.Uuid
-
-  quantity    Int            @default(1)
-  status      PhotoCardStatus @default(OWNED)
-
-  createdAt   DateTime @default(now())
-
-  template CardTemplate @relation(fields: [templateId], references: [id])
-  owner    User         @relation(fields: [ownerId], references: [id])
-
+  // Relations
+  template       CardTemplate    @relation(fields: [templateId], references: [id])
+  owner          User            @relation(fields: [ownerId], references: [id])
   saleListings   SaleListing[]
+  purchases      Purchase[]
   tradeProposals TradeProposal[]
 
-  @@index([ownerId])
+  // Indexes
+  @@unique([templateId, ownerId])
+  @@index([ownerId, status])
+  @@index([templateId])
 }
-
-// =====================
-// SALE LISTING
-// =====================
 
 model SaleListing {
-  id              Int        @id @default(autoincrement())
+  id                  Int        @id @default(autoincrement())
+  sellerId            String     @db.Uuid
+  photoCardId         Int
+  quantity            Int
+  remainQuantity      Int
+  price               Int
+  status              SaleStatus @default(SELLING)
+  exchangeGrade       Grade?
+  exchangeGenre       Genre?
+  exchangeDescription String?    @db.VarChar
+  createdAt           DateTime   @default(now()) @db.Timestamp
+  updatedAt           DateTime   @updatedAt @db.Timestamp
 
-  sellerId        String     @db.Uuid
-  photoCardId     Int
-
-  quantity        Int
-  remainQuantity  Int
-  price           Int
-
-  status          SaleStatus @default(SELLING)
-
-  exchangeGrade   Grade?
-  exchangeGenre   Genre?
-  exchangeDescription String?
-
-  createdAt DateTime @default(now())
-
-  seller    User      @relation(fields: [sellerId], references: [id])
-  photoCard PhotoCard @relation(fields: [photoCardId], references: [id])
-
+  // Relations
+  seller         User            @relation(fields: [sellerId], references: [id])
+  photoCard      PhotoCard       @relation(fields: [photoCardId], references: [id])
+  purchases      Purchase[]
   tradeProposals TradeProposal[]
+
+  // Indexes
+  @@index([sellerId])
+  @@index([status])
+  @@index([photoCardId])
 }
 
-// =====================
-// TRADE PROPOSAL
-// =====================
+model Purchase {
+  id            Int      @id @default(autoincrement())
+  buyerId       String   @db.Uuid
+  sellerId      String   @db.Uuid
+  photoCardId   Int
+  saleListingId Int
+  quantity      Int
+  price         Int
+  createdAt     DateTime @default(now()) @db.Timestamp
+
+  // Relations
+  buyer        User           @relation("BuyerPurchases", fields: [buyerId], references: [id])
+  seller       User           @relation("SellerPurchases", fields: [sellerId], references: [id])
+  photoCard    PhotoCard      @relation(fields: [photoCardId], references: [id])
+  saleListing  SaleListing    @relation(fields: [saleListingId], references: [id])
+  pointHistory PointHistory[]
+}
 
 model TradeProposal {
-  id              Int            @id @default(autoincrement())
+  id            Int            @id @default(autoincrement())
+  saleListingId Int
+  proposerId    String         @db.Uuid
+  offeredCardId Int
+  quantity      Int            @default(1)
+  status        ProposalStatus @default(PENDING)
+  message       String?        @db.VarChar
+  completedAt   DateTime?      @db.Timestamp
+  createdAt     DateTime       @default(now()) @db.Timestamp
+  updatedAt     DateTime       @updatedAt @db.Timestamp
 
-  saleListingId   Int
-  proposerId      String         @db.Uuid
-  offeredCardId   Int
-
-  quantity        Int            @default(1)
-  status          ProposalStatus @default(PENDING)
-
-  message         String?
-  completedAt     DateTime?
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
+  // Relations
   saleListing SaleListing @relation(fields: [saleListingId], references: [id])
   proposer    User        @relation(fields: [proposerId], references: [id])
   offeredCard PhotoCard   @relation(fields: [offeredCardId], references: [id])
 
+  // Indexes
+  @@unique([saleListingId, proposerId])
   @@index([saleListingId])
   @@index([proposerId])
+  @@index([status])
 }
 
-// =====================
-// NOTIFICATION
-// =====================
-
 model Notification {
-  id        Int      @id @default(autoincrement())
-  userId    String   @db.Uuid
-
+  id        Int              @id @default(autoincrement())
+  userId    String           @db.Uuid
   type      NotificationType
-  message   String
-  isRead    Boolean @default(false)
+  message   String           @db.VarChar
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now()) @db.Timestamp
 
-  createdAt DateTime @default(now())
-
+  // Relations
   user User @relation(fields: [userId], references: [id])
 }
