@@ -38,7 +38,13 @@ userController.post('/login', async (req, res, next) => {
       secure: true,
     });
 
-    return res.status(200).json({ ...user, accessToken });
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+    });
+
+    return res.status(200).json(user);
   } catch (error) {
     next(error);
   }
@@ -61,7 +67,14 @@ userController.post(
         sameSite: 'none',
         secure: true,
       });
-      return res.json({ accessToken: newAccessToken });
+
+      res.cookie('accessToken', newAccessToken, {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+      });
+
+      return res.status(200).json({ accessToken: newAccessToken });
     } catch (error) {
       next(error);
     }
@@ -80,7 +93,20 @@ userController.post('/logout', async (req, res, next) => {
       secure: true,
     });
 
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+    });
+
     return res.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+});
+
+userController.post('/oauth/google', async (req, res, next) => {
+  try {
   } catch (error) {
     next(error);
   }
