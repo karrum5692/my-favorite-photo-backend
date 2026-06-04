@@ -30,7 +30,7 @@ userController.post('/login', async (req, res, next) => {
     const accessToken = userService.createToken(user);
     const refreshToken = userService.createToken(user, 'refresh');
 
-    await userService.updateRefreshToken(user.id, refreshToken);
+    await userService.updateRefreshToken(user.id);
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
