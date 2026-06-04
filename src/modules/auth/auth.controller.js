@@ -22,7 +22,6 @@ userController.post('/signup', async (req, res, next) => {
 });
 
 userController.post('/login', async (req, res, next) => {
-  console.log('로그인 요청 도착');
   try {
     const { email, password } = req.body;
 
