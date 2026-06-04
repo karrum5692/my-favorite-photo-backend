@@ -22,6 +22,7 @@ userController.post('/signup', async (req, res, next) => {
 });
 
 userController.post('/login', async (req, res, next) => {
+  console.log('로그인 요청 도착');
   try {
     const { email, password } = req.body;
 
@@ -38,7 +39,13 @@ userController.post('/login', async (req, res, next) => {
       secure: true,
     });
 
-    return res.status(200).json({ ...user, accessToken });
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+    });
+
+    return res.status(200).json(user);
   } catch (error) {
     next(error);
   }
@@ -61,7 +68,14 @@ userController.post(
         sameSite: 'none',
         secure: true,
       });
-      return res.satus(200).json({ accessToken: newAccessToken });
+
+      res.cookie('accessToken', newAccessToken, {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+      });
+
+      return res.status(200).json({ accessToken: newAccessToken });
     } catch (error) {
       next(error);
     }
@@ -75,6 +89,12 @@ userController.post('/logout', async (req, res, next) => {
     await userService.deleteRefreshToken(refreshToken);
 
     res.clearCookie('refreshToken', {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+    });
+
+    res.clearCookie('accessToken', {
       httpOnly: true,
       sameSite: 'none',
       secure: true,
