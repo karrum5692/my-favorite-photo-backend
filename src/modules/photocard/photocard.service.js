@@ -15,8 +15,6 @@ export const findMarketCards = async ({
 
   const skip = (safePage - 1) * safeLimit;
   const whereCondition = {};
-
-  // 📌 2. photoCard.template 내부 필터 조각들을 하나로 병합할 객체 선언 (덮어쓰기 방지)
   const templateFilter = {};
 
   // 1. 텍스트 검색 조건
@@ -50,14 +48,9 @@ export const findMarketCards = async ({
     };
   }
 
-  // 매진 여부 필터 (SELLING: 판매중 / SOLD: 판매완료)
+  // 매진 여부 필터
   if (status) {
-    if (status === 'SELLING') {
-      whereCondition.status = 'SELLING';
-      whereCondition.remainQuantity = { gt: 0 };
-    } else if (status === 'SOLD') {
-      whereCondition.OR = [{ status: 'SOLD' }, { remainQuantity: 0 }];
-    }
+    whereCondition.status = status; // 'SELLING' 또는 'SOLD'가 그대로 매칭됨
   }
 
   // 3. 정렬 조건 설정
@@ -83,7 +76,6 @@ export const findMarketCards = async ({
 
   // 5. SOLD OUT 데이터 포맷팅 가공
   const formattedList = listings.map((item) => {
-    const isSoldOut = item.remainQuantity === 0 || item.status === 'SOLD';
     return {
       id: item.id,
       title: item.photoCard.template.title,
@@ -91,11 +83,11 @@ export const findMarketCards = async ({
       grade: item.photoCard.template.grade,
       genre: item.photoCard.template.genre,
       sellerNickname: item.seller.nickname,
-      status: isSoldOut ? 'SOLD_OUT' : 'SELLING',
+      status: item.status, // SELLING 또는 SOLD 그대로 유지하여 도메인 일관성 보장
     };
   });
 
-  const hasNextPage = skip + limit < totalCount;
+  const hasNextPage = skip + safeLimit < totalCount;
 
   return {
     list: formattedList,

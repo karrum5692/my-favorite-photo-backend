@@ -1,5 +1,26 @@
 import * as photocardService from './photocard.service.js';
 
+const ALLOWED_GRADES = new Set(['COMMON', 'RARE', 'SUPER_RARE', 'LEGENDARY']);
+const ALLOWED_GENRES = new Set([
+  'ALBUM',
+  'SPECIAL',
+  'FAN_SIGN',
+  'SEASON_GREETING',
+  'FAN_MEETING',
+  'CONCERT',
+  'MD',
+  'COLLABORATION',
+  'FAN_CLUB',
+  'OTHER',
+]);
+const ALLOWED_STATUS = new Set(['SELLING', 'SOLD']);
+const ALLOWED_ORDER_BY = new Set([
+  'latest',
+  'oldest',
+  'price_asc',
+  'price_desc',
+]);
+
 export const getMarketCards = async (req, res, next) => {
   try {
     const {
@@ -11,6 +32,28 @@ export const getMarketCards = async (req, res, next) => {
       page = 1,
       limit = 10,
     } = req.query;
+
+    // 1. 도메인 유효성 검증
+    if (grade && !ALLOWED_GRADES.has(grade)) {
+      return res.status(400).json({
+        message: `입력값 검증 실패: 유효하지 않은 등급(${grade})입니다.`,
+      });
+    }
+    if (genre && !ALLOWED_GENRES.has(genre)) {
+      return res.status(400).json({
+        message: `입력값 검증 실패: 유효하지 않은 장르(${genre})입니다.`,
+      });
+    }
+    if (status && !ALLOWED_STATUS.has(status)) {
+      return res.status(400).json({
+        message: `입력값 검증 실패: 유효하지 않은 상태(${status})입니다.`,
+      });
+    }
+    if (orderBy && !ALLOWED_ORDER_BY.has(orderBy)) {
+      return res.status(400).json({
+        message: `입력값 검증 실패: 유효하지 않은 정렬 기준(${orderBy})입니다.`,
+      });
+    }
 
     //필터는 한번에 하나만 선택
     const activeFilters = [grade, genre, status].filter(Boolean).length;
