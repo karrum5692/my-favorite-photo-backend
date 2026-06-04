@@ -9,39 +9,39 @@ async function createUser(user) {
 
     if (!email || !nickname || !password || !passwordConfirm) {
       const error = new Error('이메일, 닉네임, 비밀번호 가 모두 필요합니다.');
-      error.code = 422;
+      error.code = 400;
       throw error;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       const error = new Error('올바른 이메일 형식이 아닙니다.');
-      error.code = 422;
+      error.code = 400;
       throw error;
     }
 
     if (password.length < 8) {
       const error = new Error('비밀번호는 8자 이상이어야 합니다.');
-      error.code = 422;
+      error.code = 400;
       throw error;
     }
 
     if (password !== passwordConfirm) {
       const error = new Error('비밀번호가 일치하지 않습니다.');
-      error.code = 422;
+      error.code = 400;
       throw error;
     }
 
     const existedUser = await userRepository.findByEmail(email);
     if (existedUser) {
       const error = new Error('이메일은 중복된 이메일입니다.');
-      error.code = 422;
+      error.code = 409;
       throw error;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const createdUser = await userRepository.save({
+    const createdUser = await userRepository.create({
       email: user.email,
       nickname: user.nickname,
       password: hashedPassword,
@@ -69,7 +69,7 @@ async function loginUser(email, password) {
     const user = await userRepository.findByEmail(email);
     if (!user) {
       const error = new Error('존재하지 않는 이메일입니다.');
-      error.code = 401;
+      error.code = 400;
       throw error;
     }
 
@@ -85,7 +85,7 @@ async function passwordCheck(inputPassword, hashedPassword) {
   const isMatch = await bcrypt.compare(inputPassword, hashedPassword);
   if (!isMatch) {
     const error = new Error('이메일 또는 비밀번호가 일치하지 않습니다.');
-    error.code = 401;
+    error.code = 400;
     throw error;
   }
 }
@@ -106,13 +106,13 @@ async function refreshToken(userId, refreshToken) {
 
     if (!user || !storedToken) {
       const error = new Error('토큰이 존재하지 않습니다.');
-      error.code = 401;
+      error.code = 400;
       throw error;
     }
 
     if (storedToken.token !== refreshToken) {
       const error = new Error('토큰이 일치하지 않습니다.');
-      error.code = 401;
+      error.code = 400;
       throw error;
     }
 

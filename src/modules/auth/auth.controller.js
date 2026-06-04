@@ -61,7 +61,7 @@ userController.post(
         sameSite: 'none',
         secure: true,
       });
-      return res.json({ accessToken: newAccessToken });
+      return res.satus(200).json({ accessToken: newAccessToken });
     } catch (error) {
       next(error);
     }
@@ -81,6 +81,13 @@ userController.post('/logout', async (req, res, next) => {
     });
 
     return res.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+});
+
+userController.post('/oauth/google', async (req, res, next) => {
+  try {
   } catch (error) {
     next(error);
   }
