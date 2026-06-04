@@ -8,6 +8,7 @@ import authRouter from './modules/auth/auth.router.js';
 // import marketplaceRouter from './modules/marketplace/marketplace.router.js';
 // import pointRouter from './modules/point/point.router.js';
 // import notificationRouter from './modules/notification/notification.router.js';
+//import photocardRouter from './modules/photocard/photocard.router.js';
 import errorMiddleware from './middlewares/error.middleware.js';
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/auth', authRouter);
 // app.use('/market', marketplaceRouter);
 // app.use('/rewards', pointRouter);
 // app.use('/notifications', notificationRouter);
+//app.use('/market', photocardRouter);
 
 app.get('/', (req, res) => {
   res.json({ message: '안녕하세요' });
