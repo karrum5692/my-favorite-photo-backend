@@ -10,7 +10,6 @@ import errorMiddleware from './middlewares/error.middleware.js';
 
 const app = express();
 
-// 미들웨어
 app.use(cors());
 app.use(express.json());
 
@@ -21,12 +20,10 @@ app.use('/users', userRouter);
 // app.use('/rewards', pointRouter);
 // app.use('/notifications', notificationRouter);
 
-// 테스트용
 app.get('/', (req, res) => {
   res.json({ message: '안녕하세요' });
 });
 
-// 전역 에러 핸들러 등록
 app.use(errorMiddleware);
 
 export default app;
