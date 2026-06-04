@@ -32,6 +32,9 @@ async function createPhotoCard(creatorId, cardData) {
       creatorId,
     },
   });
+  await prisma.photoCard.create({
+    data: {},
+  });
 }
 
 export default {
