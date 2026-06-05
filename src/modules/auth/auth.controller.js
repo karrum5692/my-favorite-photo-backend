@@ -1,6 +1,6 @@
 import express from 'express';
 import userService from './auth.service.js';
-import auth from './auth.js';
+import auth from '../../middlewares/auth.middleware.js';
 import prisma from '../../config/db.js';
 import passport from '../../config/passport.js';
 
@@ -48,6 +48,7 @@ userController.post('/login', async (req, res, next) => {
 userController.post(
   '/refresh',
   auth.verifyRefreshToken,
+  auth.handleRefreshToken,
   async (req, res, next) => {
     try {
       const refreshToken = req.cookies.refreshToken;
@@ -55,7 +56,7 @@ userController.post(
       const { userId } = req.auth;
 
       const { newAccessToken, newRefreshToken } =
-        await userService.refreshToken(userId, refreshToken);
+        await userService.refreshToken(userId);
 
       res.cookie('refreshToken', newRefreshToken, {
         httpOnly: true,
