@@ -76,8 +76,8 @@ export const getMarketCards = async (req, res, next) => {
       genre,
       status,
       orderBy,
-      page: Number(page),
-      limit: Number(limit),
+      page: safePage,
+      limit: safeLimit,
     });
 
     // 200 OK 응답 구조
@@ -86,8 +86,8 @@ export const getMarketCards = async (req, res, next) => {
       data: result.list,
       meta: {
         totalCount: result.totalCount,
-        page: Number(page),
-        limit: Number(limit),
+        page: safePage,
+        limit: safeLimit,
         hasNextPage: result.hasNextPage,
       },
     });

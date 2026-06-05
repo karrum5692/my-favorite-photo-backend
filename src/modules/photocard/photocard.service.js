@@ -19,27 +19,18 @@ export const findMarketCards = async ({
 
   // 1. 텍스트 검색 조건
   if (search) {
-    whereCondition.photoCard = {
-      template: {
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-        ],
-      },
-    };
+    templateFilter.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+    ];
   }
 
   // 2. 단일 필터 조건 반영
   if (grade) {
-    whereCondition.photoCard = {
-      template: { grade: grade }, // COMMON, RARE, SUPER_RARE, LEGENDARY
-    };
+    templateFilter.grade = grade;
   }
-
   if (genre) {
-    whereCondition.photoCard = {
-      template: { genre: genre }, // ALBUM, SPECIAL, CONCERT 등
-    };
+    templateFilter.genre = genre;
   }
 
   if (Object.keys(templateFilter).length > 0) {
@@ -54,10 +45,13 @@ export const findMarketCards = async ({
   }
 
   // 3. 정렬 조건 설정
-  let orderCondition = { createdAt: 'desc' }; // 최신순 (기본값)
-  if (orderBy === 'oldest') orderCondition = { createdAt: 'asc' };
-  if (orderBy === 'price_asc') orderCondition = { price: 'asc' };
-  if (orderBy === 'price_desc') orderCondition = { price: 'desc' };
+  let orderCondition = [{ createdAt: 'desc' }, { id: 'asc' }]; // 최신순 (기본값)
+  if (orderBy === 'oldest')
+    orderCondition = [{ createdAt: 'asc' }, { id: 'asc' }];
+  if (orderBy === 'price_asc')
+    orderCondition = [{ price: 'asc' }, { id: 'asc' }];
+  if (orderBy === 'price_desc')
+    orderCondition = [{ price: 'desc' }, { id: 'asc' }];
 
   // 4. DB 병렬 쿼리 수행
   const [totalCount, listings] = await Promise.all([
