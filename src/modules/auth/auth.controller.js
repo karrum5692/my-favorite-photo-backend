@@ -54,7 +54,7 @@ userController.post(
 
       const { userId } = req.auth;
 
-      const { newaccessToken, newRefreshToken } =
+      const { newAccessToken, newRefreshToken } =
         await userService.refreshToken(userId, refreshToken);
 
       res.cookie('refreshToken', newRefreshToken, {
@@ -63,7 +63,7 @@ userController.post(
         secure: true,
       });
 
-      return res.status(200).json({ accessToken: newaccessToken });
+      return res.status(200).json({ accessToken: newAccessToken });
     } catch (error) {
       next(error);
     }
