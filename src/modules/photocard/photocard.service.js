@@ -45,21 +45,23 @@ export const findMarketCards = async ({
   }
 
   // 3. 정렬 조건 설정
-  let orderCondition = [{ createdAt: 'desc' }, { id: 'asc' }]; // 최신순 (기본값 fallback)
+  let orderCondition;
 
-  if (orderBy === 'latest') {
-    orderCondition = [{ createdAt: 'desc' }, { id: 'asc' }];
+  switch (orderBy) {
+    case 'oldest':
+      orderCondition = [{ createdAt: 'asc' }, { id: 'asc' }];
+      break;
+    case 'price_asc':
+      orderCondition = [{ price: 'asc' }, { id: 'asc' }];
+      break;
+    case 'price_desc':
+      orderCondition = [{ price: 'desc' }, { id: 'asc' }];
+      break;
+    case 'latest':
+    default: // latest이거나 빈 값일 때 중복 없이 한 번에 처리!
+      orderCondition = [{ createdAt: 'desc' }, { id: 'asc' }];
+      break;
   }
-  if (orderBy === 'oldest') {
-    orderCondition = [{ createdAt: 'asc' }, { id: 'asc' }];
-  }
-  if (orderBy === 'price_asc') {
-    orderCondition = [{ price: 'asc' }, { id: 'asc' }];
-  }
-  if (orderBy === 'price_desc') {
-    orderCondition = [{ price: 'desc' }, { id: 'asc' }];
-  }
-
   // 4. DB 병렬 쿼리 수행
   const [totalCount, listings] = await Promise.all([
     prisma.saleListing.count({ where: whereCondition }),
