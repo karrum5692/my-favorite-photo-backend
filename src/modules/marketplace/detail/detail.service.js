@@ -1,10 +1,5 @@
 import prisma from '../../../config/db.js';
 
-//판매할 카드 정보 가져오기 => 완료
-//구매하기 -> 완료
-//판매글 수정하기 -> 완료
-//판매글 취소 -> 미완료
-
 //카드 상세페이지-구매자
 
 //판매 등록된 카드 정보 불러오기
@@ -16,7 +11,9 @@ async function getSale(saleId) {
     include: {
       photoCard: {
         include: {
-          template: true,
+          template: {
+            include: { creator: true },
+          },
         },
       },
     },
@@ -34,7 +31,7 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
       },
     });
 
-    // 2. 상태 체크(판매 등록에서 조회환 status가 sale인지) 검증
+    // 2. 상태 체크 검증
     if (!sale) {
       throw new Error('판매글을 찾을 수 없습니다.');
     }
@@ -57,7 +54,6 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
     }
 
     // 5. 구매자 포인트 조회(구매자 포인트가 살 수 있을 정도로 가지고 있는지)
-    //모든 user 자동으로 point 생성하는가??
     const buyerPoint = await tx.point.findUnique({
       where: { userId: buyerId },
     });
@@ -68,10 +64,10 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
 
     const totalPurchasingPrice = sale.price * purchaseQuantity;
 
-    //UX용(에러) => 밑에 조건부 update로 검증함
-    if (totalPurchasingPrice > buyerPoint.balance) {
-      throw new Error('포인트 부족으로 구매할 수 없습니다.');
-    }
+    //UX용(에러) => 밑에 조건부 update로 검증함(Line 157-175)
+    // if (totalPurchasingPrice > buyerPoint.balance) {
+    //   throw new Error('포인트 부족으로 구매할 수 없습니다.');
+    // }
 
     // 6. 판매자의 Remain 판매수량 감소(조건부 Update): 판매수량 >=구매수량 검증
     const updatedSale = await tx.saleListing.updateMany({
@@ -94,9 +90,6 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
     }
 
     //판매글 상태 변경(수량 감소 후의 값 기준)
-    //  - 0개 -> SOLD_OUT
-    //   - 남아있음 -> SELLING
-
     const changedStatus = await tx.saleListing.findUnique({
       where: { id: saleId },
     });
@@ -125,7 +118,6 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
     //8. 구매자의 구매수량 증가시키기(구매한 숫자만큼)
     // 구매자가 이미 그 카드를 가지고 있으면 기존 카드 수량 + 구매수량 (update)
     // 처음 구매하는 카드면 새 row 생성(create)
-    // => upsert
 
     const templateId = sale.photoCard.templateId;
 
@@ -148,12 +140,9 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
       },
     });
 
-    //9. 포인트(판매자는 증가/구매자는 차감) => 포인트 잔액 변경+포인트 이력 생성
+    //9. 포인트
 
-    // buyer.point 감소 =>  // 구매자 포인트 차감할 때 잔액이 충분한가? 조건부 update 고려해보기
-    // seller.point 증가
-    // PointHistory 생성
-
+    // buyer.point 감소
     const buyerTotalPoint = await tx.point.updateMany({
       where: {
         userId: buyerId,
@@ -174,7 +163,7 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
       );
     }
 
-    //판매자 포인트 증가 - point와 user 테이블 동시에 생성되는가???
+    //판매자 포인트 증가
     await tx.point.update({
       where: {
         userId: sale.sellerId,
@@ -225,9 +214,6 @@ async function updateSale(saleId, data) {
 
     if (data.quantity !== undefined) {
       const soldQuantity = sale.quantity - sale.remainQuantity;
-      if (soldQuantity < 0) {
-        throw new Error('팔린 카드 수량이 음수이므로 에러 발생!');
-      }
 
       if (soldQuantity > data.quantity) {
         throw new Error('이미 팔린 카드 수량보다 더 적게 할 수 없습니다.');

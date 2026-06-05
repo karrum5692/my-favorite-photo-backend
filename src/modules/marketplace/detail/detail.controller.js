@@ -1,5 +1,4 @@
 import detailService from './detail.service.js';
-import auth from '../../../middlewares/auth.middleware.js';
 
 async function getDetailCard(req, res, next) {
   try {
