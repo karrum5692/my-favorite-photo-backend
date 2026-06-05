@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -21,6 +21,15 @@ function filteredPassword(user) {
 }
 
 async function patchProfile(id, updateData) {
+  const existUser = await prisma.user.findUnique({
+    where: { id },
+  });
+  if (!existUser) {
+    const error = new Error('존재하지 않는 유저입니다.');
+    error.code = 404;
+    throw error;
+  }
+
   const user = await prisma.user.update({
     where: { id },
     data: {
@@ -29,7 +38,7 @@ async function patchProfile(id, updateData) {
     },
   });
 
-  return user;
+  return filteredPassword(user);
 }
 
 async function createPhoto(creatorId, cardData) {

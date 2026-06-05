@@ -1,4 +1,3 @@
-import { Router } from 'express';
 import userService from './user.service.js';
 
 const getProfile = async function (req, res, next) {
@@ -30,7 +29,7 @@ const createPhoto = async function (req, res, next) {
     const id = req.user.id;
     const { title, grade, genre, price, totalIssued, imageUrl, description } =
       req.body;
-    const user = await userService.createPhoto(id, {
+    const photo = await userService.createPhoto(id, {
       title,
       grade,
       genre,
@@ -39,7 +38,7 @@ const createPhoto = async function (req, res, next) {
       imageUrl,
       description,
     });
-    res.status(201).json(user);
+    res.status(201).json(photo);
   } catch (error) {
     next(error);
   }
