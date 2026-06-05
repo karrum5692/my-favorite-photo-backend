@@ -10,7 +10,7 @@ router.post(
   authMiddleware,
   detailController.purchaseCard
 );
-router.patch('/cards/:id', detailController.patchedCard);
-router.delete('/cards/:id', detailController.cancelledCard);
+router.patch('/cards/:id', authMiddleware, detailController.patchedCard);
+router.delete('/cards/:id', authMiddleware, detailController.cancelledCard);
 
 export default router;
