@@ -2,7 +2,6 @@ import { expressjwt } from 'express-jwt';
 import userRepository from '../modules/auth/auth.repository.js';
 
 const authMiddleware = async (req, res, next) => {
-  // 추후 실제 JWT 검증으로 교체 필요
   req.user = {
     id: 'temp-user-id',
     email: 'test@test.com',
@@ -24,11 +23,7 @@ const verifyAccessToken = expressjwt({
   credentialsRequired: true,
   getToken: (req) => {
     const authHeader = req.headers.authorization;
-
-    if (!authHeader) {
-      return null;
-    }
-
+    if (!authHeader) return null;
     return authHeader.split(' ')[1];
   },
 });
@@ -58,6 +53,13 @@ async function handleRefreshToken(req, res, next) {
     next(error);
   }
 }
+
+export {
+  verifyRefreshToken,
+  handleRefreshToken,
+  authMiddleware,
+  verifyAccessToken,
+};
 
 export default {
   verifyRefreshToken,
