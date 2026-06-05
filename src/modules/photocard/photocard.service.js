@@ -45,13 +45,20 @@ export const findMarketCards = async ({
   }
 
   // 3. 정렬 조건 설정
-  let orderCondition = [{ createdAt: 'desc' }, { id: 'asc' }]; // 최신순 (기본값)
-  if (orderBy === 'oldest')
+  let orderCondition = [{ createdAt: 'desc' }, { id: 'asc' }]; // 최신순 (기본값 fallback)
+
+  if (orderBy === 'latest') {
+    orderCondition = [{ createdAt: 'desc' }, { id: 'asc' }];
+  }
+  if (orderBy === 'oldest') {
     orderCondition = [{ createdAt: 'asc' }, { id: 'asc' }];
-  if (orderBy === 'price_asc')
+  }
+  if (orderBy === 'price_asc') {
     orderCondition = [{ price: 'asc' }, { id: 'asc' }];
-  if (orderBy === 'price_desc')
+  }
+  if (orderBy === 'price_desc') {
     orderCondition = [{ price: 'desc' }, { id: 'asc' }];
+  }
 
   // 4. DB 병렬 쿼리 수행
   const [totalCount, listings] = await Promise.all([
