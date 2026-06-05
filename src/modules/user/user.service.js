@@ -20,24 +20,36 @@ function filteredPassword(user) {
   return rest;
 }
 
-async function createPhotoCard(creatorId, cardData) {
-  const newTemplate = await prisma.cardTemplate.create({
+async function patchProfile(id, updateData) {
+  const user = await prisma.user.update({
+    where: { id },
     data: {
+      nickname: updateData.nickname,
+      profileImageUrl: updateData.profileImageUrl,
+    },
+  });
+
+  return user;
+}
+
+async function createPhoto(creatorId, cardData) {
+  const newPhoto = await prisma.CardTemplate.create({
+    data: {
+      creatorId,
       title: cardData.title,
+      description: cardData.description,
+      imageUrl: cardData.imageUrl,
       grade: cardData.grade,
       genre: cardData.genre,
       price: cardData.price,
       totalIssued: cardData.totalIssued,
-      imageUrl: cardData.imageUrl,
-      description: cardData.description,
-      creatorId,
     },
   });
-  await prisma.photoCard.create({
-    data: {},
-  });
+  return newPhoto;
 }
 
 export default {
   getProfile,
+  patchProfile,
+  createPhoto,
 };
