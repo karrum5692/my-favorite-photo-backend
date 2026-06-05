@@ -1,15 +1,16 @@
 import * as tradeService from './trade.service.js';
 
-// 제안 생성
+// 교환 제안 생성
 export const createProposal = async (req, res, next) => {
   try {
-    const saleCardId = Number(req.params.id);
+    const saleListingId = Number(req.params.listingId);
 
-    const proposerId = 1; // JWT 대체 (테스트용)
+    // const proposerId = 'test-user-id'; // JWT 적용 전 임시
+    const proposerId = 'f331e93d-cd99-4b42-b77d-c0cd327677db'; // JWT 적용 후 임시
     const { offeredCardId, message } = req.body;
 
     const result = await tradeService.createProposal(
-      saleCardId,
+      saleListingId,
       Number(offeredCardId),
       proposerId,
       message
@@ -25,12 +26,12 @@ export const createProposal = async (req, res, next) => {
   }
 };
 
-// 제안 목록
+// 교환 제안 목록
 export const getProposals = async (req, res, next) => {
   try {
-    const saleCardId = Number(req.params.id);
+    const saleListingId = Number(req.params.listingId);
 
-    const result = await tradeService.getProposals(saleCardId);
+    const result = await tradeService.getProposals(saleListingId);
 
     res.status(200).json({
       success: true,
@@ -42,15 +43,14 @@ export const getProposals = async (req, res, next) => {
   }
 };
 
-// 수락
+// 교환 수락
 export const acceptProposal = async (req, res, next) => {
   try {
-    const saleCardId = Number(req.params.id);
     const proposalId = Number(req.params.proposalId);
 
-    const result = await tradeService.acceptProposal(saleCardId, proposalId);
+    const result = await tradeService.acceptProposal(proposalId);
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: '교환 수락 성공',
       data: result,
@@ -60,14 +60,14 @@ export const acceptProposal = async (req, res, next) => {
   }
 };
 
-// 거절
+// 교환 거절
 export const rejectProposal = async (req, res, next) => {
   try {
     const proposalId = Number(req.params.proposalId);
 
     const result = await tradeService.rejectProposal(proposalId);
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: '교환 거절 성공',
       data: result,

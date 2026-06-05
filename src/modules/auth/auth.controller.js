@@ -2,6 +2,7 @@ import express from 'express';
 import userService from './auth.service.js';
 import auth from './auth.js';
 import prisma from '../../config/db.js';
+import passport from '../../config/passport.js';
 
 const userController = express.Router();
 
@@ -38,13 +39,7 @@ userController.post('/login', async (req, res, next) => {
       secure: true,
     });
 
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-    });
-
-    return res.status(200).json(user);
+    return res.status(200).json({ ...user, accessToken });
   } catch (error) {
     next(error);
   }
@@ -63,12 +58,6 @@ userController.post(
         await userService.refreshToken(userId, refreshToken);
 
       res.cookie('refreshToken', newRefreshToken, {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-      });
-
-      res.cookie('accessToken', newAccessToken, {
         httpOnly: true,
         sameSite: 'none',
         secure: true,
@@ -93,23 +82,40 @@ userController.post('/logout', async (req, res, next) => {
       secure: true,
     });
 
-    res.clearCookie('accessToken', {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-    });
-
     return res.sendStatus(200);
   } catch (error) {
     next(error);
   }
 });
 
-userController.post('/oauth/google', async (req, res, next) => {
-  try {
-  } catch (error) {
-    next(error);
+userController.get(
+  '/oauth/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+  })
+);
+
+userController.get(
+  '/oauth/google/callback',
+  passport.authenticate('google', { session: false }),
+  async (req, res, next) => {
+    try {
+      const accessToken = userService.createToken(req.user);
+      const refreshToken = userService.createToken(req.user, 'refresh');
+
+      await userService.updateRefreshToken(req.user.id, refreshToken);
+
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+      });
+
+      return res.redirect(process.env.CLIENT_URL || 'http://localhost:3000/');
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 export default userController;
