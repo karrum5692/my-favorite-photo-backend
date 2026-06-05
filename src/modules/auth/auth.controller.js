@@ -98,17 +98,23 @@ userController.get(
 userController.get(
   '/oauth/google/callback',
   passport.authenticate('google', { session: false }),
-  (req, res) => {
-    const accessToken = userService.createToken(req.user);
-    const refreshToken = userService.createToken(req.user, 'refresh');
+  async (req, res, next) => {
+    try {
+      const accessToken = userService.createToken(req.user);
+      const refreshToken = userService.createToken(req.user, 'refresh');
 
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-    });
+      await userService.updateRefreshToken(req.user.id, refreshToken);
 
-    return res.redirect('http://localhost:3000/');
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+      });
+
+      return res.redirect('http://localhost:3000/');
+    } catch (error) {
+      next(error);
+    }
   }
 );
 
