@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import tradeRouter from './modules/trade/trade.router.js';
+import detailRouter from './modules/marketplace/detail/detail.router.js';
 
 import authRouter from './modules/auth/auth.router.js';
 // import userRouter from './modules/user/user.router.js';
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use('/market', tradeRouter);
 // 라우터 등록
 app.use('/auth', authRouter);
+app.use('/market', detailRouter);
 // app.use('/users', userRouter);
 // app.use('/market', marketplaceRouter);
 // app.use('/rewards', pointRouter);

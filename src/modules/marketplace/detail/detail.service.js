@@ -1,0 +1,260 @@
+import prisma from '../../../config/db.js';
+
+//판매할 카드 정보 가져오기 => 완료
+//구매하기 -> 완료
+//판매글 수정하기 -> 완료
+//판매글 취소 -> 미완료
+
+//카드 상세페이지-구매자
+
+//판매 등록된 카드 정보 불러오기
+async function getSale(saleId) {
+  return await prisma.saleListing.findUnique({
+    where: {
+      id: saleId,
+    },
+    include: {
+      photoCard: {
+        include: {
+          template: true,
+        },
+      },
+    },
+  });
+}
+
+// 구매하기
+async function postPurchase(saleId, purchaseQuantity, buyerId) {
+  return await prisma.$transaction(async (tx) => {
+    //1. 판매 등록 조회
+    const sale = await tx.saleListing.findUnique({
+      where: { id: saleId },
+      include: {
+        photoCard: true,
+      },
+    });
+
+    // 2. 상태 체크(판매 등록에서 조회환 status가 sale인지) 검증
+    if (!sale) {
+      throw new Error('판매글을 찾을 수 없습니다.');
+    }
+
+    if (sale.status !== 'SELLING') {
+      throw new Error('판매 중인 카드가 아닙니다.');
+    }
+
+    // 3. 판매글이 본인 판매글인지
+
+    //userId는 이미 로그인한 id
+    if (sale.sellerId === buyerId) {
+      throw new Error('본인 카드를 본인이 구매할 수 없습니다.');
+    }
+
+    // 4. 판매수량이 정상인지 확인(판매 등록에서 조회한 판매수량이 0인지 아닌지 확인)
+    //    구매수량>0 인지 확인
+    if (purchaseQuantity <= 0) {
+      throw new Error('구매 수량은 1개 이상이어야 합니다.');
+    }
+
+    // 5. 구매자 포인트 조회(구매자 포인트가 살 수 있을 정도로 가지고 있는지)
+    //모든 user 자동으로 point 생성하는가??
+    const buyerPoint = await tx.point.findUnique({
+      where: { userId: buyerId },
+    });
+
+    if (!buyerPoint) {
+      throw new Error('구매자의 포인트 row가 없습니다.');
+    }
+
+    const totalPurchasingPrice = sale.price * purchaseQuantity;
+
+    //UX용(에러) => 밑에 조건부 update로 검증함
+    if (totalPurchasingPrice > buyerPoint.balance) {
+      throw new Error('포인트 부족으로 구매할 수 없습니다.');
+    }
+
+    // 6. 판매자의 Remain 판매수량 감소(조건부 Update): 판매수량 >=구매수량 검증
+    const updatedSale = await tx.saleListing.updateMany({
+      where: {
+        id: saleId,
+        remainQuantity: {
+          gte: purchaseQuantity,
+        },
+        status: 'SELLING',
+      },
+      data: {
+        remainQuantity: {
+          decrement: purchaseQuantity,
+        },
+      },
+    });
+
+    if (updatedSale.count === 0) {
+      throw new Error('판매 카드의 재고가 부족합니다.');
+    }
+
+    //판매글 상태 변경(수량 감소 후의 값 기준)
+    //  - 0개 -> SOLD_OUT
+    //   - 남아있음 -> SELLING
+
+    const changedStatus = await tx.saleListing.findUnique({
+      where: { id: saleId },
+    });
+
+    if (changedStatus.remainQuantity === 0) {
+      await tx.saleListing.update({
+        where: { id: saleId },
+        data: {
+          status: 'SOLD',
+        },
+      });
+    }
+
+    //7. 구매처리
+    const purchases = await tx.purchase.create({
+      data: {
+        buyer: { connect: { id: buyerId } },
+        seller: { connect: { id: sale.sellerId } },
+        photoCard: { connect: { id: sale.photoCardId } },
+        saleListing: { connect: { id: saleId } },
+        quantity: purchaseQuantity,
+        price: sale.price,
+      },
+    });
+
+    //8. 구매자의 구매수량 증가시키기(구매한 숫자만큼)
+    // 구매자가 이미 그 카드를 가지고 있으면 기존 카드 수량 + 구매수량 (update)
+    // 처음 구매하는 카드면 새 row 생성(create)
+    // => upsert
+
+    const templateId = sale.photoCard.templateId;
+
+    //구매자 구매 수량 증가
+    await tx.photoCard.upsert({
+      where: {
+        templateId_ownerId: {
+          templateId,
+          ownerId: buyerId,
+        },
+      },
+      update: {
+        quantity: { increment: purchaseQuantity },
+      },
+      create: {
+        templateId,
+        ownerId: buyerId,
+        quantity: purchaseQuantity,
+        status: 'OWNED',
+      },
+    });
+
+    //9. 포인트(판매자는 증가/구매자는 차감) => 포인트 잔액 변경+포인트 이력 생성
+
+    // buyer.point 감소 =>  // 구매자 포인트 차감할 때 잔액이 충분한가? 조건부 update 고려해보기
+    // seller.point 증가
+    // PointHistory 생성
+
+    const buyerTotalPoint = await tx.point.updateMany({
+      where: {
+        userId: buyerId,
+        balance: {
+          gte: totalPurchasingPrice,
+        },
+      },
+      data: {
+        balance: {
+          decrement: totalPurchasingPrice,
+        },
+      },
+    });
+
+    if (buyerTotalPoint.count === 0) {
+      throw new Error(
+        '동시에 결제 시도가 이루어져 포인트 결제에 실패하였습니다.'
+      );
+    }
+
+    //판매자 포인트 증가 - point와 user 테이블 동시에 생성되는가???
+    await tx.point.update({
+      where: {
+        userId: sale.sellerId,
+      },
+      data: {
+        balance: { increment: totalPurchasingPrice },
+      },
+    });
+
+    //구매자 포인트 히스토리 생성
+    await tx.pointHistory.create({
+      data: {
+        userId: buyerId,
+        purchaseId: purchases.id,
+        type: 'PURCHASE',
+        amount: -totalPurchasingPrice,
+      },
+    });
+
+    //판매자 포인트 히스토리 생성
+    await tx.pointHistory.create({
+      data: {
+        userId: sale.sellerId,
+        purchaseId: purchases.id,
+        type: 'SALE',
+        amount: totalPurchasingPrice,
+      },
+    });
+
+    return purchases;
+  });
+}
+
+//카드 상세페이지-판매자
+
+//판매글 수정
+async function updateSale(saleId, data) {
+  return await prisma.$transaction(async (tx) => {
+    const sale = await tx.saleListing.findUnique({
+      where: { id: saleId },
+    });
+
+    if (!sale) {
+      throw new Error('판매글이 존재하지 않습니다.');
+    }
+
+    const updateData = { ...data };
+
+    if (data.quantity !== undefined) {
+      const soldQuantity = sale.quantity - sale.remainQuantity;
+      if (soldQuantity < 0) {
+        throw new Error('팔린 카드 수량이 음수이므로 에러 발생!');
+      }
+
+      if (soldQuantity > data.quantity) {
+        throw new Error('이미 팔린 카드 수량보다 더 적게 할 수 없습니다.');
+      }
+
+      updateData.remainQuantity = data.quantity - soldQuantity;
+    }
+
+    const patchedSale = await tx.saleListing.update({
+      where: { id: saleId },
+      data: updateData,
+    });
+    return patchedSale;
+  });
+}
+
+//판매글 취소
+async function deleteSale(saleId) {
+  return await prisma.saleListing.update({
+    where: { id: saleId },
+    data: { status: 'CANCELLED' },
+  });
+}
+
+export default {
+  getSale,
+  postPurchase,
+  updateSale,
+  deleteSale,
+};
