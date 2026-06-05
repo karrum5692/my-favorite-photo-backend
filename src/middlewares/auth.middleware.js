@@ -37,18 +37,19 @@ async function handleRefreshToken(req, res, next) {
   try {
     const refreshToken = req.cookies.refreshToken;
     const { userId } = req.auth;
+    req.user = { userId };
 
     const storedToken = await userRepository.findRefreshTokenByUserId(userId);
 
     if (!refreshToken || !storedToken) {
       const error = new Error('토큰이 존재하지 않습니다.');
-      error.code = 404;
+      error.status = 404;
       throw error;
     }
 
     if (storedToken.token !== refreshToken) {
       const error = new Error('토큰이 일치하지 않습니다.');
-      error.code = 401;
+      error.status = 401;
       throw error;
     }
 
