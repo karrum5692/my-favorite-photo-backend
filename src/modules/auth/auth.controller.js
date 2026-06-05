@@ -39,13 +39,7 @@ userController.post('/login', async (req, res, next) => {
       secure: true,
     });
 
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-    });
-
-    return res.status(200).json(user);
+    return res.status(200).json({ ...user, accessToken });
   } catch (error) {
     next(error);
   }
@@ -60,7 +54,7 @@ userController.post(
 
       const { userId } = req.auth;
 
-      const { newAccessToken, newRefreshToken } =
+      const { newaccessToken, newRefreshToken } =
         await userService.refreshToken(userId, refreshToken);
 
       res.cookie('refreshToken', newRefreshToken, {
@@ -69,13 +63,7 @@ userController.post(
         secure: true,
       });
 
-      res.cookie('accessToken', newAccessToken, {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-      });
-
-      return res.status(200).json({ accessToken: newAccessToken });
+      return res.status(200).json({ accessToken: newaccessToken });
     } catch (error) {
       next(error);
     }
@@ -89,12 +77,6 @@ userController.post('/logout', async (req, res, next) => {
     await userService.deleteRefreshToken(refreshToken);
 
     res.clearCookie('refreshToken', {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-    });
-
-    res.clearCookie('accessToken', {
       httpOnly: true,
       sameSite: 'none',
       secure: true,
@@ -121,12 +103,6 @@ userController.get(
     const refreshToken = userService.createToken(req.user, 'refresh');
 
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: true,
-    });
-
-    res.cookie('accessToken', accessToken, {
       httpOnly: true,
       sameSite: 'none',
       secure: true,
