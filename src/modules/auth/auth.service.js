@@ -102,20 +102,6 @@ async function refreshToken(userId, refreshToken) {
   try {
     const user = await userRepository.findById(userId);
 
-    const storedToken = await userRepository.findRefreshTokenByUserId(userId);
-
-    if (!user || !storedToken) {
-      const error = new Error('토큰이 존재하지 않습니다.');
-      error.code = 404;
-      throw error;
-    }
-
-    if (storedToken.token !== refreshToken) {
-      const error = new Error('토큰이 일치하지 않습니다.');
-      error.code = 401;
-      throw error;
-    }
-
     const newAccessToken = createToken(user);
     const newRefreshToken = createToken(user, 'refresh');
 
