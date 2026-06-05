@@ -13,7 +13,7 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        const email = profile.emails[0].value;
+        const email = profile.emails?.[0]?.value;
 
         const user = await prisma.user.upsert({
           where: { email },
@@ -21,9 +21,9 @@ passport.use(
           create: {
             email,
             nickname: profile.displayName,
-            provider: 'GOOGLE',
+            providerType: 'GOOGLE',
             providerId: profile.id,
-            profileImage: profile.photos[0].value,
+            profileImageUrl: profile.photos[0].value,
           },
         });
         return done(null, user);
