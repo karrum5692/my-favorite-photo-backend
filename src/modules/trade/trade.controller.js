@@ -5,8 +5,7 @@ export const createProposal = async (req, res, next) => {
   try {
     const saleListingId = Number(req.params.listingId);
 
-    // const proposerId = 'test-user-id'; // JWT 적용 전 임시
-    const proposerId = 'f331e93d-cd99-4b42-b77d-c0cd327677db'; // JWT 적용 후 임시
+    const proposerId = req.auth.userId;
     const { offeredCardId, message } = req.body;
 
     const result = await tradeService.createProposal(
@@ -30,8 +29,12 @@ export const createProposal = async (req, res, next) => {
 export const getProposals = async (req, res, next) => {
   try {
     const saleListingId = Number(req.params.listingId);
+    const currentUserId = req.auth.userId;
 
-    const result = await tradeService.getProposals(saleListingId);
+    const result = await tradeService.getProposals(
+      saleListingId,
+      currentUserId
+    );
 
     res.status(200).json({
       success: true,
@@ -47,8 +50,8 @@ export const getProposals = async (req, res, next) => {
 export const acceptProposal = async (req, res, next) => {
   try {
     const proposalId = Number(req.params.proposalId);
-
-    const result = await tradeService.acceptProposal(proposalId);
+    const currentUserId = req.auth.userId;
+    const result = await tradeService.acceptProposal(proposalId, currentUserId);
 
     res.status(200).json({
       success: true,
@@ -64,8 +67,9 @@ export const acceptProposal = async (req, res, next) => {
 export const rejectProposal = async (req, res, next) => {
   try {
     const proposalId = Number(req.params.proposalId);
+    const currentUserId = req.auth.userId;
 
-    const result = await tradeService.rejectProposal(proposalId);
+    const result = await tradeService.rejectProposal(proposalId, currentUserId);
 
     res.status(200).json({
       success: true,
