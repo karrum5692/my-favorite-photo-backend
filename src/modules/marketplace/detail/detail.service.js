@@ -200,7 +200,7 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
 //카드 상세페이지-판매자
 
 //판매글 수정
-async function updateSale(saleId, data) {
+async function updateSale(saleId, data, sellerId) {
   return await prisma.$transaction(async (tx) => {
     const sale = await tx.saleListing.findUnique({
       where: { id: saleId },
@@ -208,6 +208,10 @@ async function updateSale(saleId, data) {
 
     if (!sale) {
       throw new Error('판매글이 존재하지 않습니다.');
+    }
+
+    if (sale.sellerId === sellerId) {
+      throw new Error('본인 카드를 본인이 구매할 수 없습니다.');
     }
 
     const updateData = { ...data };
@@ -231,7 +235,11 @@ async function updateSale(saleId, data) {
 }
 
 //판매글 취소
-async function deleteSale(saleId) {
+async function deleteSale(saleId, sellerId) {
+  if (sale.sellerId === sellerId) {
+    throw new Error('본인 카드를 본인이 구매할 수 없습니다.');
+  }
+
   return await prisma.saleListing.update({
     where: { id: saleId },
     data: { status: 'CANCELLED' },
