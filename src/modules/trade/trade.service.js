@@ -65,8 +65,22 @@ export const createProposal = async (
   });
 };
 
-// 교환 제안 목록
-export const getProposals = async (saleListingId) => {
+// 교환 제안 목록 조회
+export const getProposals = async (saleListingId, currentUserId) => {
+  const saleListing = await prisma.saleListing.findUnique({
+    where: {
+      id: saleListingId,
+    },
+  });
+
+  if (!saleListing) {
+    throw new Error('판매글이 존재하지 않습니다.');
+  }
+
+  if (saleListing.sellerId !== currentUserId) {
+    throw new Error('조회 권한이 없습니다.');
+  }
+
   return prisma.tradeProposal.findMany({
     where: {
       saleListingId,
@@ -82,7 +96,7 @@ export const getProposals = async (saleListingId) => {
 };
 
 // 교환 수락
-export const acceptProposal = async (proposalId) => {
+export const acceptProposal = async (proposalId, currentUserId) => {
   return prisma.$transaction(async (tx) => {
     const proposal = await tx.tradeProposal.findUnique({
       where: {
@@ -111,6 +125,32 @@ export const acceptProposal = async (proposalId) => {
       throw new Error('판매글이 존재하지 않습니다.');
     }
 
+    if (saleListing.sellerId !== currentUserId) {
+      throw new Error('판매자만 수락할 수 있습니다.');
+    }
+
+    if (saleListing.status !== 'SELLING') {
+      throw new Error('이미 종료된 거래입니다.');
+    }
+
+    /**
+     * 동시성 제어
+     * 이미 SOLD 된 경우 count = 0
+     */
+    const listingUpdateResult = await tx.saleListing.updateMany({
+      where: {
+        id: saleListing.id,
+        status: 'SELLING',
+      },
+      data: {
+        status: 'SOLD',
+      },
+    });
+
+    if (listingUpdateResult.count === 0) {
+      throw new Error('이미 처리된 거래입니다.');
+    }
+
     const saleCard = saleListing.photoCard;
 
     const offeredCard = await tx.photoCard.findUnique({
@@ -124,10 +164,9 @@ export const acceptProposal = async (proposalId) => {
     }
 
     const saleOwnerId = saleCard.ownerId;
-
     const offerOwnerId = offeredCard.ownerId;
 
-    // 카드 소유자 교환
+    // 카드 교환
     await tx.photoCard.update({
       where: {
         id: saleCard.id,
@@ -157,16 +196,6 @@ export const acceptProposal = async (proposalId) => {
       },
     });
 
-    // 판매 완료 처리
-    await tx.saleListing.update({
-      where: {
-        id: saleListing.id,
-      },
-      data: {
-        status: 'SOLD',
-      },
-    });
-
     // 나머지 제안 자동 거절
     await tx.tradeProposal.updateMany({
       where: {
@@ -186,7 +215,35 @@ export const acceptProposal = async (proposalId) => {
 };
 
 // 교환 거절
-export const rejectProposal = async (proposalId) => {
+export const rejectProposal = async (proposalId, currentUserId) => {
+  const proposal = await prisma.tradeProposal.findUnique({
+    where: {
+      id: proposalId,
+    },
+  });
+
+  if (!proposal) {
+    throw new Error('제안이 존재하지 않습니다.');
+  }
+
+  if (proposal.status !== 'PENDING') {
+    throw new Error('이미 처리된 제안입니다.');
+  }
+
+  const saleListing = await prisma.saleListing.findUnique({
+    where: {
+      id: proposal.saleListingId,
+    },
+  });
+
+  if (!saleListing) {
+    throw new Error('판매글이 존재하지 않습니다.');
+  }
+
+  if (saleListing.sellerId !== currentUserId) {
+    throw new Error('판매자만 거절할 수 있습니다.');
+  }
+
   return prisma.tradeProposal.update({
     where: {
       id: proposalId,
