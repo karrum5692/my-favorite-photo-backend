@@ -24,7 +24,7 @@ async function purchaseCard(req, res, next) {
   try {
     const saleId = Number(req.params.id);
     const quantity = Number(req.body.quantity);
-    const buyerId = req.user.id;
+    const buyerId = req.auth.userId;
 
     if (Number.isNaN(saleId) || saleId <= 0) {
       throw new Error('판매글의 id가 유효하지 않습니다.');
@@ -52,6 +52,7 @@ async function purchaseCard(req, res, next) {
 async function patchedCard(req, res, next) {
   try {
     const saleId = Number(req.params.id);
+    const sellerId = req.auth.userId;
     const {
       quantity,
       price,
@@ -88,7 +89,11 @@ async function patchedCard(req, res, next) {
       throw new Error('수정된 데이터가 없습니다.');
     }
 
-    const editCard = await detailService.updateSale(saleId, updateData);
+    const editCard = await detailService.updateSale(
+      saleId,
+      updateData,
+      sellerId
+    );
     return res
       .status(200)
       .json({ success: true, message: '판매 수정하기 성공', data: editCard });
@@ -100,12 +105,13 @@ async function patchedCard(req, res, next) {
 async function cancelledCard(req, res, next) {
   try {
     const saleId = Number(req.params.id);
+    const sellerId = req.auth.userId;
 
     if (Number.isNaN(saleId) || saleId <= 0) {
       throw new Error('판매글의 id가 유효하지 않습니다.');
     }
 
-    const cancellCard = await detailService.deleteSale(saleId);
+    const cancellCard = await detailService.deleteSale(saleId, sellerId);
 
     return res
       .status(200)
