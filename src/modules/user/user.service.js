@@ -57,8 +57,47 @@ async function createPhoto(creatorId, cardData) {
   return newPhoto;
 }
 
+async function getMyCards(userId) {
+  const cards = await prisma.photoCard.findMany({
+    where: {
+      ownerId: userId,
+      quantity: {
+        gt: 0,
+      },
+    },
+    include: {
+      owner: {
+        select: {
+          nickname: true,
+        },
+      },
+      template: {
+        select: {
+          title: true,
+          imageUrl: true,
+          grade: true,
+          genre: true,
+          price: true,
+        },
+      },
+    },
+  });
+
+  return cards.map((card) => ({
+    id: card.id,
+    nickname: card.owner.nickname,
+    quantity: card.quantity,
+    title: card.template.title,
+    imageUrl: card.template.imageUrl,
+    grade: card.template.grade,
+    genre: card.template.genre,
+    price: card.template.price,
+  }));
+}
+
 export default {
   getProfile,
   patchProfile,
   createPhoto,
+  getMyCards,
 };
