@@ -1,11 +1,15 @@
 import { Router } from 'express';
 import userController from './user.controller.js';
-import { authMiddleware } from '../../middlewares/auth.middleware.js';
+import auth from '../../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.get('/me', authMiddleware, userController.getProfile);
-router.patch('/me', authMiddleware, userController.patchProfile);
-router.post('/gallery/cards', authMiddleware, userController.createPhoto);
+router.get('/me', auth.verifyAccessToken, userController.getProfile);
+router.patch('/me', auth.verifyAccessToken, userController.patchProfile);
+router.post(
+  '/gallery/cards',
+  auth.verifyAccessToken,
+  userController.createPhoto
+);
 
 export default router;
