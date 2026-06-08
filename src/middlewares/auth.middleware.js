@@ -1,15 +1,6 @@
 import { expressjwt } from 'express-jwt';
 import userRepository from '../modules/auth/auth.repository.js';
 
-const authMiddleware = async (req, res, next) => {
-  req.user = {
-    id: 'temp-user-id',
-    email: 'test@test.com',
-    nickname: '테스트유저',
-  };
-  next();
-};
-
 const verifyRefreshToken = expressjwt({
   secret: process.env.JWT_SECRET,
   algorithms: ['HS256'],
@@ -54,16 +45,8 @@ async function handleRefreshToken(req, res, next) {
   }
 }
 
-export {
-  verifyRefreshToken,
-  handleRefreshToken,
-  authMiddleware,
-  verifyAccessToken,
-};
-
 export default {
   verifyRefreshToken,
   handleRefreshToken,
-  authMiddleware,
   verifyAccessToken,
 };
