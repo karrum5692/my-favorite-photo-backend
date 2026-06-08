@@ -6,8 +6,8 @@ import prisma from '../../config/db.js';
 async function createUser(user) {
   try {
     const { email, nickname, password, passwordConfirm } = user;
-    const trimmedEmail = email.trim();
-    const trimmedNickname = nickname.trim();
+    const trimmedEmail = email.trim() ?? '';
+    const trimmedNickname = nickname.trim() ?? '';
 
     if (!trimmedEmail || !trimmedNickname || !password || !passwordConfirm) {
       const error = new Error('이메일, 닉네임, 비밀번호 가 모두 필요합니다.');
