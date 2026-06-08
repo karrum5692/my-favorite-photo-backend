@@ -219,7 +219,7 @@ async function updateSale(saleId, data, sellerId) {
     }
 
     if (sale.sellerId !== sellerId) {
-      throw new Error('본인 카드만 수정할 수 있습니다..');
+      throw new Error('본인 카드만 수정할 수 있습니다.');
     }
 
     const updateData = { ...data };
@@ -249,8 +249,16 @@ async function deleteSale(saleId, sellerId) {
       where: { id: saleId },
     });
 
+    if (!sale) {
+      throw new Error('판매글이 존재하지 않습니다.');
+    }
+
     if (sale.sellerId !== sellerId) {
       throw new Error('본인 카드만 취소할 수 있습니다.');
+    }
+
+    if (sale.status !== 'SELLING') {
+      throw new Error('판매 중인 게시글만 취소할 수 있습니다.');
     }
 
     const cancel = await tx.saleListing.update({
