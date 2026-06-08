@@ -111,11 +111,11 @@ async function cancelledCard(req, res, next) {
       throw new Error('판매글의 id가 유효하지 않습니다.');
     }
 
-    const cancellCard = await detailService.deleteSale(saleId, sellerId);
+    const cancelCard = await detailService.deleteSale(saleId, sellerId);
 
     return res
       .status(200)
-      .json({ success: true, message: '판매글 취소 완료', data: cancellCard });
+      .json({ success: true, message: '판매글 취소 완료', data: cancelCard });
   } catch (error) {
     return next(error);
   }

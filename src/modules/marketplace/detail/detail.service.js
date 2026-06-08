@@ -101,6 +101,14 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
           status: 'SOLD',
         },
       });
+
+      //photocard 상태 변경
+      await tx.photoCard.update({
+        where: { id: changedStatus.photoCardId },
+        data: {
+          status: 'SOLD_OUT',
+        },
+      });
     }
 
     //7. 구매처리
@@ -210,8 +218,8 @@ async function updateSale(saleId, data, sellerId) {
       throw new Error('판매글이 존재하지 않습니다.');
     }
 
-    if (sale.sellerId === sellerId) {
-      throw new Error('본인 카드를 본인이 구매할 수 없습니다.');
+    if (sale.sellerId !== sellerId) {
+      throw new Error('본인 카드만 수정할 수 있습니다.');
     }
 
     const updateData = { ...data };
@@ -236,13 +244,37 @@ async function updateSale(saleId, data, sellerId) {
 
 //판매글 취소
 async function deleteSale(saleId, sellerId) {
-  if (sale.sellerId === sellerId) {
-    throw new Error('본인 카드를 본인이 구매할 수 없습니다.');
-  }
+  return await prisma.$transaction(async (tx) => {
+    const sale = await tx.saleListing.findUnique({
+      where: { id: saleId },
+    });
 
-  return await prisma.saleListing.update({
-    where: { id: saleId },
-    data: { status: 'CANCELLED' },
+    if (!sale) {
+      throw new Error('판매글이 존재하지 않습니다.');
+    }
+
+    if (sale.sellerId !== sellerId) {
+      throw new Error('본인 카드만 취소할 수 있습니다.');
+    }
+
+    if (sale.status !== 'SELLING') {
+      throw new Error('판매 중인 게시글만 취소할 수 있습니다.');
+    }
+
+    const cancel = await tx.saleListing.update({
+      where: { id: saleId },
+      data: { status: 'CANCELLED' },
+    });
+
+    //포토카드 status = owned
+    if (cancel.status === 'CANCELLED') {
+      await tx.photoCard.update({
+        where: { id: sale.photoCardId },
+        data: { status: 'OWNED' },
+      });
+    }
+
+    return cancel;
   });
 }
 

@@ -6,8 +6,10 @@ import prisma from '../../config/db.js';
 async function createUser(user) {
   try {
     const { email, nickname, password, passwordConfirm } = user;
+    const trimmedEmail = email.trim() ?? '';
+    const trimmedNickname = nickname.trim() ?? '';
 
-    if (!email || !nickname || !password || !passwordConfirm) {
+    if (!trimmedEmail || !trimmedNickname || !password || !passwordConfirm) {
       const error = new Error('이메일, 닉네임, 비밀번호 가 모두 필요합니다.');
       error.code = 400;
       throw error;
@@ -16,6 +18,24 @@ async function createUser(user) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       const error = new Error('올바른 이메일 형식이 아닙니다.');
+      error.code = 400;
+      throw error;
+    }
+
+    if (/\s/.test(email)) {
+      const error = new Error('이메일에는 공백을 사용할 수 없습니다.');
+      error.code = 400;
+      throw error;
+    }
+
+    if (nickname !== trimmedNickname) {
+      const error = new Error('닉네임에는 앞뒤 공백은 사용할 수 없습니다.');
+      error.code = 400;
+      throw error;
+    }
+
+    if (/\s/.test(password)) {
+      const error = new Error('비밀번호에는 공백을 사용할 수 없습니다.');
       error.code = 400;
       throw error;
     }
