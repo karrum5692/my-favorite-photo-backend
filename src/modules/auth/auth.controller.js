@@ -104,7 +104,7 @@ userController.get(
       const accessToken = userService.createToken(req.user);
       const refreshToken = userService.createToken(req.user, 'refresh');
 
-      await userService.updateRefreshToken(req.user.id, refreshToken);
+      await userService.updateRefreshToken(req.user.userId, refreshToken);
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,

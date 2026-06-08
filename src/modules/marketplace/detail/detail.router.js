@@ -1,16 +1,24 @@
 import { Router } from 'express';
 import detailController from './detail.controller.js';
-import { authMiddleware } from '../../../middlewares/auth.middleware.js';
+import auth from '../../../middlewares/auth.middleware.js';
 
 const router = Router();
 
 router.get('/cards/:id', detailController.getDetailCard);
 router.post(
   '/cards/:id/purchase',
-  authMiddleware,
+  auth.verifyAccessToken,
   detailController.purchaseCard
 );
-router.patch('/cards/:id', authMiddleware, detailController.patchedCard);
-router.delete('/cards/:id', authMiddleware, detailController.cancelledCard);
+router.patch(
+  '/cards/:id',
+  auth.verifyAccessToken,
+  detailController.patchedCard
+);
+router.delete(
+  '/cards/:id',
+  auth.verifyAccessToken,
+  detailController.cancelledCard
+);
 
 export default router;
