@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 async function getPoint(id) {
   const point = await prisma.point.findUnique({
-    where: { id },
+    where: { userId: id },
     select: { balance: true },
   });
   if (!point) {
@@ -12,16 +12,16 @@ async function getPoint(id) {
     error.code = 404;
     throw error;
   }
+  return point;
 }
 
 async function getPointhistory(id) {
-  const pointHistory = await prisma.pointhistory.findMany({
-    where: { id },
-    select: { balance: true },
+  const pointHistory = await prisma.pointHistory.findMany({
+    where: { userId: id },
+    orderBy: { createdAt: 'desc' },
   });
-  if (!point) {
-    const error = new Error('존재하지 않는 유저입니다.');
-    error.code = 404;
-    throw error;
-  }
+
+  return pointHistory;
 }
+
+export default { getPoint, getPointhistory };
