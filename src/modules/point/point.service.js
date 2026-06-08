@@ -24,4 +24,48 @@ async function getPointhistory(id) {
   return pointHistory;
 }
 
-export default { getPoint, getPointhistory };
+async function randomPoint(id) {
+  const lastEventTime = await prisma.point.findUnique({
+    where: { userId: id },
+    select: { lastEventAt: true },
+  });
+  const now = new Date();
+  if (lastEventTime.lastEventAt) {
+    const timeResult = now - lastEventTime.lastEventAt;
+    const oneHour = 60 * 60 * 1000;
+    if (timeResult < oneHour) {
+      const error = new Error('아직 1시간이 지나지 않았습니다.');
+      error.code = 400;
+      throw error;
+    }
+  }
+
+  const point = getRandomPoint();
+
+  const result = await prisma.$transaction([
+    prisma.point.update({
+      where: { userId: id },
+      data: { balance: { increment: point }, lastEventAt: new Date() },
+    }),
+    prisma.pointHistory.create({
+      data: { userId: id, amount: point, type: 'RANDOM_BOX' },
+    }),
+  ]);
+  return result;
+}
+
+function getRandomPoint() {
+  const random = Math.random();
+
+  if (random < 0.8) {
+    return 10;
+  } else if (random < 0.9) {
+    return 30;
+  } else if (random < 0.98) {
+    return 50;
+  } else {
+    return 100;
+  }
+}
+
+export default { getPoint, getPointhistory, randomPoint };

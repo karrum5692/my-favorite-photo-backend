@@ -20,4 +20,14 @@ const getPointhistory = async function (req, res, next) {
   }
 };
 
-export default { getPoint, getPointhistory };
+const randomPoint = async function (req, res, next) {
+  try {
+    const id = req.auth.userId;
+    const resultPoint = await pointService.randomPoint(id);
+    res.status(200).json(resultPoint);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default { getPoint, getPointhistory, randomPoint };

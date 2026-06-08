@@ -10,6 +10,6 @@ router.get(
   auth.verifyAccessToken,
   pointController.getPointhistory
 );
-router.post('/random-box');
+router.post('/random-box', auth.verifyAccessToken, pointController.randomPoint);
 
 export default router;
