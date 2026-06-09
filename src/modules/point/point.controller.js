@@ -10,10 +10,10 @@ const getPoint = async function (req, res, next) {
   }
 };
 
-const getPointhistory = async function (req, res, next) {
+const getPointHistory = async function (req, res, next) {
   try {
     const id = req.auth.userId;
-    const pointHistory = await pointService.getPointhistory(id);
+    const pointHistory = await pointService.getPointHistory(id);
     res.status(200).json(pointHistory);
   } catch (error) {
     next(error);
@@ -24,10 +24,10 @@ const randomPoint = async function (req, res, next) {
   try {
     const id = req.auth.userId;
     const resultPoint = await pointService.randomPoint(id);
-    res.status(200).json(resultPoint);
+    res.status(201).json(resultPoint);
   } catch (error) {
     next(error);
   }
 };
 
-export default { getPoint, getPointhistory, randomPoint };
+export default { getPoint, getPointHistory, randomPoint };

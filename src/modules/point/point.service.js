@@ -15,7 +15,7 @@ async function getPoint(id) {
   return point;
 }
 
-async function getPointhistory(id) {
+async function getPointHistory(id) {
   const pointHistory = await prisma.pointHistory.findMany({
     where: { userId: id },
     orderBy: { createdAt: 'desc' },
@@ -29,6 +29,11 @@ async function randomPoint(id) {
     where: { userId: id },
     select: { lastEventAt: true },
   });
+  if (!lastEventTime.lastEventAt) {
+    const error = new Error('존재하지 않는 유저입니다.');
+    error.code = 404;
+    throw error;
+  }
   const now = new Date();
   if (lastEventTime.lastEventAt) {
     const timeResult = now - lastEventTime.lastEventAt;
@@ -45,7 +50,7 @@ async function randomPoint(id) {
   const result = await prisma.$transaction([
     prisma.point.update({
       where: { userId: id },
-      data: { balance: { increment: point }, lastEventAt: new Date() },
+      data: { balance: { increment: point }, lastEventAt: now },
     }),
     prisma.pointHistory.create({
       data: { userId: id, amount: point, type: 'RANDOM_BOX' },
@@ -68,4 +73,4 @@ function getRandomPoint() {
   }
 }
 
-export default { getPoint, getPointhistory, randomPoint };
+export default { getPoint, getPointHistory, randomPoint };

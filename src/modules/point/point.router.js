@@ -8,7 +8,7 @@ router.get('/me', auth.verifyAccessToken, pointController.getPoint);
 router.get(
   '/me/history',
   auth.verifyAccessToken,
-  pointController.getPointhistory
+  pointController.getPointHistory
 );
 router.post('/random-box', auth.verifyAccessToken, pointController.randomPoint);
 
