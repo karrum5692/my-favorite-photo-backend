@@ -56,7 +56,7 @@ async function createSale(ownerId, photoCardId, data) {
       data: {
         seller: { connect: { id: ownerId } },
         remainQuantity: data.quantity,
-        photoCardId: photoCardId,
+        photoCard: { connect: { id: photoCardId } },
         quantity: data.quantity,
         price: data.price,
         exchangeGrade: data.exchangeGrade,

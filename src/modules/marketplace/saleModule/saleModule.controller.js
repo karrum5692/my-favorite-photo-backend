@@ -22,7 +22,7 @@ async function postSale(req, res, next) {
     const ownerId = req.auth.userId;
 
     if (Number.isNaN(photoCardId)) {
-      throw new Error('포토카드의 id가 유호하지 않습니다.');
+      throw new Error('포토카드의 id가 유효하지 않습니다.');
     }
 
     const {
@@ -65,4 +65,4 @@ async function postSale(req, res, next) {
   }
 }
 
-export default { getMyCard, getCard, postSale };
+export default { getMyCard, postSale };
