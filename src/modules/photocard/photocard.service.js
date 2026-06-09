@@ -82,10 +82,13 @@ export const findMarketCards = async ({
     return {
       id: item.id,
       title: item.photoCard.template.title,
-      price: item.price,
+      imageUrl: item.photoCard.template.imageUrl, // 빠진거 추가
       grade: item.photoCard.template.grade,
       genre: item.photoCard.template.genre,
       sellerNickname: item.seller.nickname,
+      price: item.price,
+      remainQuantity: item.remainQuantity, // 빠진거 추가
+      totalQuantity: item.quantity, // 빠진거 추가
       status: item.status, // SELLING 또는 SOLD 그대로 유지하여 도메인 일관성 보장
     };
   });
