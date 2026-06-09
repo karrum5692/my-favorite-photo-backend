@@ -5,6 +5,7 @@ async function getMySale(ownerId) {
   return await prisma.photoCard.findMany({
     where: { ownerId: ownerId, status: 'OWNED' },
     select: {
+      id: true,
       quantity: true,
       template: {
         select: {
@@ -38,11 +39,11 @@ async function createSale(ownerId, photoCardId, data) {
       throw new Error('본인의 카드가 아닙니다.');
     }
 
-    if (data.quantity > card.quantity) {
-      throw new Error('판매 수량이 보유 수량보다 많습니다.');
+    if (data.quantity !== card.quantity) {
+      throw new Error('보유 수량 전체만 판매할 수 있습니다.');
     }
 
-    const changeStatus = await tx.photoCard.update({
+    const changedStatus = await tx.photoCard.updateMany({
       where: {
         id: photoCardId,
         status: 'OWNED',
@@ -51,6 +52,10 @@ async function createSale(ownerId, photoCardId, data) {
         status: 'ON_SALE',
       },
     });
+
+    if (changedStatus.count === 0) {
+      throw new Error('이미 판매 중이거나 상태가 변경되었습니다.');
+    }
 
     const sale = await tx.saleListing.create({
       data: {

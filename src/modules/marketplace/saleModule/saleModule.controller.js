@@ -1,4 +1,5 @@
 import saleModuleService from './saleModule.service.js';
+import { Grade, Genre } from '@prisma/client';
 
 async function getMyCard(req, res, next) {
   try {
@@ -21,7 +22,7 @@ async function postSale(req, res, next) {
     const photoCardId = Number(req.params.id);
     const ownerId = req.auth.userId;
 
-    if (Number.isNaN(photoCardId)) {
+    if (Number.isNaN(photoCardId) || photoCardId <= 0) {
       throw new Error('포토카드의 id가 유효하지 않습니다.');
     }
 
@@ -41,7 +42,15 @@ async function postSale(req, res, next) {
       throw new Error('판매 가격의 값이 유효하지 않습니다.');
     }
 
-    if (!exchangeDescription) {
+    if (Object.keys(Grade).includes(exchangeGrade)) {
+      throw new Error('카드 등급의 값이 유효하지 않습니다.');
+    }
+
+    if (Object.keys(Genre).includes(exchangeGenre)) {
+      throw new Error('카드 장르의 값이 유효하지 않습니다.');
+    }
+
+    if (!exchangeDescription || !exchangeDescription.trim()) {
       throw new Error('설명을 작성해야 합니다.');
     }
 

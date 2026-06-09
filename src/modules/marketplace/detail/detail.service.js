@@ -9,6 +9,7 @@ async function getSale(saleId) {
       id: saleId,
     },
     select: {
+      id: true,
       price: true,
       remainQuantity: true,
       quantity: true,
