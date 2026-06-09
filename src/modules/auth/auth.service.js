@@ -15,6 +15,14 @@ async function createUser(user) {
       throw error;
     }
 
+    const existedUser = await userRepository.findByEmail(email);
+    if (existedUser) {
+      const error = new Error('이메일은 중복된 이메일입니다.');
+      error.code = 409;
+      error.field = 'email';
+      throw error;
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       const error = new Error('올바른 이메일 형식이 아닙니다.');
@@ -49,13 +57,6 @@ async function createUser(user) {
     if (password !== passwordConfirm) {
       const error = new Error('비밀번호가 일치하지 않습니다.');
       error.code = 400;
-      throw error;
-    }
-
-    const existedUser = await userRepository.findByEmail(email);
-    if (existedUser) {
-      const error = new Error('이메일은 중복된 이메일입니다.');
-      error.code = 409;
       throw error;
     }
 
