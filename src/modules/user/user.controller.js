@@ -56,4 +56,22 @@ const getMyCards = async (req, res, next) => {
   }
 };
 
-export default { getProfile, patchProfile, createPhoto, getMyCards };
+const getMySalesCards = async (req, res, next) => {
+  try {
+    const id = req.auth.userId;
+
+    const salesCard = await userService.getMysalesCards(id);
+
+    res.status(200).json(salesCard);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default {
+  getProfile,
+  patchProfile,
+  createPhoto,
+  getMyCards,
+  getMySalesCards,
+};

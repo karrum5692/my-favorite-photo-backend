@@ -95,9 +95,17 @@ async function getMyCards(userId) {
   }));
 }
 
+async function getMySalesCard(id) {
+  const salesCard = await prisma.photoCard.findMany({
+    where: { ownerId: id, status: 'ON_SALE' },
+  });
+  return salesCard;
+}
+
 export default {
   getProfile,
   patchProfile,
   createPhoto,
   getMyCards,
+  getMySalesCard,
 };
