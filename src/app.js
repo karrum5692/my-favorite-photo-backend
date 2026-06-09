@@ -14,7 +14,6 @@ import authRouter from './modules/auth/auth.router.js';
 // import pointRouter from './modules/point/point.router.js';
 // import notificationRouter from './modules/notification/notification.router.js';
 import photocardRouter from './modules/photocard/photocard.router.js';
-import photocardcreationRouter from './modules/photocard/photocard-creation/creation.router.js';
 import errorMiddleware from './middlewares/error.middleware.js';
 
 const app = express();
@@ -39,7 +38,6 @@ app.use('/market', detailRouter);
 // app.use('/rewards', pointRouter);
 // app.use('/notifications', notificationRouter);
 app.use('/market', photocardRouter);
-app.use('/market', photocardcreationRouter);
 app.use('/market', myCardRouter);
 
 app.get('/', (req, res) => {
