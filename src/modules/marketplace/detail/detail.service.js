@@ -8,11 +8,28 @@ async function getSale(saleId) {
     where: {
       id: saleId,
     },
-    include: {
+    select: {
+      price: true,
+      remainQuantity: true,
+      quantity: true,
+      exchangeGrade: true,
+      exchangeGenre: true,
+      exchangeDescription: true,
       photoCard: {
-        include: {
+        select: {
           template: {
-            include: { creator: true },
+            select: {
+              title: true,
+              imageUrl: true,
+              grade: true,
+              genre: true,
+              description: true,
+              creator: {
+                select: {
+                  nickname: true,
+                },
+              },
+            },
           },
         },
       },
