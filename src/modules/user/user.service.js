@@ -96,10 +96,40 @@ async function getMyCards(userId) {
 }
 
 async function getMySalesCard(id) {
+  const allCards = await prisma.photoCard.findMany({
+    where: { ownerId: id },
+    include: { template: { select: { grade: true } } },
+  });
+
+  const allCounts = allCards.length;
+  const gradeCount = { COMMON: 0, RARE: 0, SUPER_RARE: 0, LEGENDARY: 0 };
+
+  allCards.forEach(function (card) {
+    gradeCount[card.template.grade] += 1;
+  });
+
   const salesCard = await prisma.photoCard.findMany({
     where: { ownerId: id, status: 'ON_SALE' },
+    select: {
+      quantity: true,
+      status: true,
+      owner: {
+        select: {
+          nickname: true,
+        },
+      },
+      template: {
+        select: {
+          title: true,
+          imageUrl: true,
+          grade: true,
+          genre: true,
+          price: true,
+        },
+      },
+    },
   });
-  return salesCard;
+  return { allCounts, gradeCount, salesCard };
 }
 
 export default {

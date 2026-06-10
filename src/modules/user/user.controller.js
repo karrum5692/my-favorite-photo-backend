@@ -56,11 +56,11 @@ const getMyCards = async (req, res, next) => {
   }
 };
 
-const getMySalesCards = async (req, res, next) => {
+const getMySalesCard = async (req, res, next) => {
   try {
     const id = req.auth.userId;
 
-    const salesCard = await userService.getMysalesCards(id);
+    const salesCard = await userService.getMySalesCard(id);
 
     res.status(200).json(salesCard);
   } catch (error) {
@@ -73,5 +73,5 @@ export default {
   patchProfile,
   createPhoto,
   getMyCards,
-  getMySalesCards,
+  getMySalesCard,
 };
