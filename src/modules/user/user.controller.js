@@ -59,8 +59,15 @@ const getMyCards = async (req, res, next) => {
 const getMySalesCard = async (req, res, next) => {
   try {
     const id = req.auth.userId;
+    console.log('유저 id:', id);
+    const { search, grade, genre, saleType, soldOut } = req.query;
 
-    const salesCard = await userService.getMySalesCard(id);
+    const salesCard = await userService.getMySalesCard(id, {
+      search,
+      grade,
+      genre,
+      soldOut,
+    });
 
     res.status(200).json(salesCard);
   } catch (error) {

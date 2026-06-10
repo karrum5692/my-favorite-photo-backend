@@ -95,7 +95,9 @@ async function getMyCards(userId) {
   }));
 }
 
-async function getMySalesCard(id) {
+async function getMySalesCard(id, filters = {}) {
+  const { search, grade, genre, saleType, soldOut } = filters;
+
   const allCards = await prisma.photoCard.findMany({
     where: { ownerId: id },
     include: { template: { select: { grade: true } } },
@@ -103,32 +105,51 @@ async function getMySalesCard(id) {
 
   const allCounts = allCards.length;
   const gradeCount = { COMMON: 0, RARE: 0, SUPER_RARE: 0, LEGENDARY: 0 };
-
-  allCards.forEach(function (card) {
+  allCards.forEach((card) => {
     gradeCount[card.template.grade] += 1;
   });
 
-  const salesCard = await prisma.photoCard.findMany({
-    where: { ownerId: id, status: 'ON_SALE' },
+  const whereCondition = { sellerId: id };
+
+  const templateFilter = {};
+  if (search) templateFilter.title = { contains: search, mode: 'insensitive' };
+  if (grade) templateFilter.grade = grade;
+  if (genre) templateFilter.genre = genre;
+
+  if (Object.keys(templateFilter).length > 0) {
+    whereCondition.photoCard = { template: templateFilter };
+  }
+  if (soldOut === 'SELLING') whereCondition.status = 'SELLING';
+  if (soldOut === 'SOLD') whereCondition.status = 'SOLD';
+
+  // 카드 목록 조회
+  const salesCard = await prisma.saleListing.findMany({
+    where: whereCondition,
     select: {
-      quantity: true,
+      price: true,
+      remainQuantity: true,
       status: true,
-      owner: {
+      exchangeGrade: true,
+      photoCard: {
+        select: {
+          template: {
+            select: {
+              title: true,
+              imageUrl: true,
+              grade: true,
+              genre: true,
+            },
+          },
+        },
+      },
+      seller: {
         select: {
           nickname: true,
         },
       },
-      template: {
-        select: {
-          title: true,
-          imageUrl: true,
-          grade: true,
-          genre: true,
-          price: true,
-        },
-      },
     },
   });
+
   return { allCounts, gradeCount, salesCard };
 }
 
