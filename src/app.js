@@ -30,9 +30,9 @@ app.use(express.json());
 // app.use('/auth', authRouter);
 app.use('/users', userRouter);
 app.use('/market', tradeRouter);
-// 라우터 등록
 app.use('/auth', authRouter);
 app.use('/market', detailRouter);
+app.use('/user', userRouter);
 // app.use('/users', userRouter);
 // app.use('/market', marketplaceRouter);
 // app.use('/rewards', pointRouter);
