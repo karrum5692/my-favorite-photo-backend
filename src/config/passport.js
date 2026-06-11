@@ -7,13 +7,15 @@ passport.use(
     {
       clientID: process.env.CLIENT_ID,
       clientSecret: process.env.CLIENT_SECRET,
-      callbackURL:
-        process.env.CALLBACK_URL ||
-        'http://localhost:4000/auth/oauth/google/callback',
+      callbackURL: 'http://localhost:4000/auth/oauth/google/callback',
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
         const email = profile.emails?.[0]?.value;
+
+        if (!email) {
+          return done(new Error('Google email not provided'));
+        }
 
         const user = await prisma.user.upsert({
           where: { email },
@@ -23,7 +25,7 @@ passport.use(
             nickname: profile.displayName,
             providerType: 'GOOGLE',
             providerId: profile.id,
-            profileImageUrl: profile.photos[0].value,
+            profileImageUrl: profile.photos?.[0]?.value,
           },
         });
         return done(null, user);
