@@ -61,7 +61,12 @@ async function getMyCards(userId, filters = {}) {
   const { search, grade, genre } = filters;
 
   const allCards = await prisma.photoCard.findMany({
-    where: { ownerId: userId },
+    where: {
+      ownerId: userId,
+      quantity: {
+        gt: 0,
+      },
+    },
     include: { template: { select: { grade: true } } },
   });
 
@@ -123,15 +128,28 @@ async function getMyCards(userId, filters = {}) {
 async function getMySalesCard(id, filters = {}) {
   const { search, grade, genre, soldOut } = filters;
 
-  const allSalesCards = await prisma.photoCard.findMany({
-    where: { ownerId: id, status: { in: ['ON_SALE', 'SOLD_OUT'] } },
-    include: { template: { select: { grade: true } } },
+  const salesBaseWhere = {
+    sellerId: id,
+    status: { in: ['SELLING', 'SOLD'] },
+  };
+
+  const allSalesCards = await prisma.saleListing.findMany({
+    where: salesBaseWhere,
+    select: {
+      photoCard: {
+        select: {
+          template: {
+            select: { grade: true },
+          },
+        },
+      },
+    },
   });
 
   const allCounts = allSalesCards.length;
   const gradeCount = { COMMON: 0, RARE: 0, SUPER_RARE: 0, LEGENDARY: 0 };
   allSalesCards.forEach((card) => {
-    gradeCount[card.template.grade] += 1;
+    gradeCount[card.photoCard.template.grade] += 1;
   });
 
   const whereCondition = { sellerId: id };
