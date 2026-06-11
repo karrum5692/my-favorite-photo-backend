@@ -48,15 +48,13 @@ userController.post('/login', async (req, res, next) => {
 userController.post(
   '/refresh',
   auth.verifyRefreshToken,
-  auth.handleRefreshToken,
   async (req, res, next) => {
     try {
       const refreshToken = req.cookies.refreshToken;
-
-      const { userId } = req.auth;
+      const { id: userId } = req.auth;
 
       const { newAccessToken, newRefreshToken } =
-        await userService.refreshToken(userId);
+        await userService.refreshToken(userId, refreshToken);
 
       res.cookie('refreshToken', newRefreshToken, {
         httpOnly: true,
@@ -74,6 +72,10 @@ userController.post(
 userController.post('/logout', async (req, res, next) => {
   try {
     const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res.sendStatus(204);
+    }
 
     await userService.deleteRefreshToken(refreshToken);
 
@@ -96,27 +98,33 @@ userController.get(
   })
 );
 
-userController.get(
-  '/oauth/google/callback',
-  passport.authenticate('google', { session: false }),
-  async (req, res, next) => {
+userController.get('/oauth/google/callback', (req, res, next) => {
+  passport.authenticate('google', { session: false }, async (err, user) => {
     try {
-      const accessToken = userService.createToken(req.user);
-      const refreshToken = userService.createToken(req.user, 'refresh');
+      // 1. passport 실패
+      if (err || !user) {
+        return res.redirect('http://localhost:3000/login?error=oauth_failed');
+      }
 
-      await userService.updateRefreshToken(req.user.id, refreshToken);
+      // 2. 토큰 생성
+      const accessToken = userService.createToken(user);
+      const refreshToken = userService.createToken(user, 'refresh');
+
+      await userService.updateRefreshToken(user.id, refreshToken);
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         sameSite: 'none',
-        secure: true,
+        secure: false,
       });
 
-      return res.redirect(process.env.CLIENT_URL || 'http://localhost:3000/');
+      return res.redirect(
+        `http://localhost:3000/oauth-success?token=${accessToken}`
+      );
     } catch (error) {
-      next(error);
+      return res.redirect('http://localhost:3000/login?error=server_error');
     }
-  }
-);
+  })(req, res, next);
+});
 
 export default userController;
