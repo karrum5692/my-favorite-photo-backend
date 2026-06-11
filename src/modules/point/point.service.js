@@ -25,34 +25,41 @@ async function getPointHistory(id) {
 }
 
 async function randomPoint(id) {
+  const point = getRandomPoint();
+  const now = new Date();
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
   const result = await prisma.$transaction(async (tx) => {
-    const lastEventTime = await tx.point.findUnique({
-      where: { userId: id },
-      select: { lastEventAt: true },
+    const updated = await tx.point.updateMany({
+      where: {
+        userId: id,
+        OR: [{ lastEventAt: null }, { lastEventAt: { lte: oneHourAgo } }],
+      },
+      data: {
+        balance: { increment: point },
+        lastEventAt: now,
+      },
     });
 
-    if (!lastEventTime) {
-      const error = new Error('존재하지 않는 유저입니다.');
-      error.code = 404;
+    if (updated.count === 0) {
+      const exists = await tx.point.findUnique({
+        where: { userId: id },
+        select: { userId: true },
+      });
+
+      if (!exists) {
+        const error = new Error('존재하지 않는 유저입니다.');
+        error.code = 404;
+        throw error;
+      }
+
+      const error = new Error('아직 1시간이 지나지 않았습니다.');
+      error.code = 400;
       throw error;
     }
 
-    const now = new Date();
-    if (lastEventTime.lastEventAt) {
-      const timeResult = now - lastEventTime.lastEventAt;
-      const oneHour = 60 * 60 * 1000;
-      if (timeResult < oneHour) {
-        const error = new Error('아직 1시간이 지나지 않았습니다.');
-        error.code = 400;
-        throw error;
-      }
-    }
-
-    const point = getRandomPoint();
-
-    const updatedPoint = await tx.point.update({
+    const updatedPoint = await tx.point.findUnique({
       where: { userId: id },
-      data: { balance: { increment: point }, lastEventAt: now },
     });
 
     const history = await tx.pointHistory.create({
@@ -64,6 +71,7 @@ async function randomPoint(id) {
 
   return result;
 }
+
 function getRandomPoint() {
   const random = Math.random();
 

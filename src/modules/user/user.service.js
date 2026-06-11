@@ -152,7 +152,7 @@ async function getMySalesCard(id, filters = {}) {
     gradeCount[card.photoCard.template.grade] += 1;
   });
 
-  const whereCondition = { sellerId: id };
+  const whereCondition = { sellerId: id, status: { in: ['SELLING', 'SOLD'] } };
 
   const templateFilter = {};
   if (search) templateFilter.title = { contains: search, mode: 'insensitive' };
