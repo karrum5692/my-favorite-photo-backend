@@ -25,7 +25,7 @@ async function getPointHistory(id) {
 }
 
 async function randomPoint(id) {
-  const point = getRandomPoint();
+  const amount = getRandomPoint();
   const now = new Date();
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 

@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 async function getProfile(id) {
   const user = await prisma.user.findUnique({
     where: { id },
+    select: { nickname: true, point: { select: { balance: true } } },
   });
   if (!user) {
     const error = new Error('존재하지 않는 유저입니다.');
