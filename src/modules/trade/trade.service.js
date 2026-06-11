@@ -1,4 +1,5 @@
 import prisma from '../../config/db.js';
+import notificationService from '../notification/notification.service.js';
 
 // 교환 제안 생성
 export const createProposal = async (
@@ -54,7 +55,7 @@ export const createProposal = async (
     throw new Error('이미 진행 중인 제안이 있습니다.');
   }
 
-  return prisma.tradeProposal.create({
+  const proposal = await prisma.tradeProposal.create({
     data: {
       saleListingId,
       proposerId,
@@ -63,6 +64,12 @@ export const createProposal = async (
       status: 'PENDING',
     },
   });
+  await notificationService.createReceivedNotification(
+    saleListing.sellerId,
+    proposal.id
+  );
+
+  return proposal;
 };
 
 // 교환 제안 목록 조회
@@ -97,7 +104,7 @@ export const getProposals = async (saleListingId, currentUserId) => {
 
 // 교환 수락
 export const acceptProposal = async (proposalId, currentUserId) => {
-  return prisma.$transaction(async (tx) => {
+  const accepted = await prisma.$transaction(async (tx) => {
     const proposal = await tx.tradeProposal.findUnique({
       where: {
         id: proposalId,
@@ -212,6 +219,12 @@ export const acceptProposal = async (proposalId, currentUserId) => {
 
     return accepted;
   });
+  await notificationService.createTradeAcceptedNotification(
+    accepted.proposerId,
+    proposalId
+  );
+
+  return accepted;
 };
 
 // 교환 거절
@@ -244,7 +257,7 @@ export const rejectProposal = async (proposalId, currentUserId) => {
     throw new Error('판매자만 거절할 수 있습니다.');
   }
 
-  return prisma.tradeProposal.update({
+  const rejected = await prisma.tradeProposal.update({
     where: {
       id: proposalId,
     },
@@ -252,4 +265,12 @@ export const rejectProposal = async (proposalId, currentUserId) => {
       status: 'REJECTED',
     },
   });
+
+  // 알림 추가
+  await notificationService.createTradeRejectedNotification(
+    proposal.proposerId,
+    proposalId
+  );
+
+  return rejected;
 };

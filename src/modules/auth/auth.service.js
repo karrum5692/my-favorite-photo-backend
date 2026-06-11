@@ -10,7 +10,6 @@ async function createUser(user) {
     if (!email || !nickname || !password || !passwordConfirm) {
       const error = new Error('이메일, 닉네임, 비밀번호가 모두 필요합니다.');
       error.code = 400;
-      git;
       throw error;
     }
     const trimmedEmail = email.trim() ?? '';
