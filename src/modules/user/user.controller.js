@@ -47,8 +47,13 @@ const createPhoto = async function (req, res, next) {
 const getMyCards = async (req, res, next) => {
   try {
     const userId = req.auth.userId;
+    const { search, grade, genre } = req.query;
 
-    const cards = await userService.getMyCards(userId);
+    const cards = await userService.getMyCards(userId, {
+      search,
+      grade,
+      genre,
+    });
 
     res.status(200).json(cards);
   } catch (error) {
@@ -56,4 +61,28 @@ const getMyCards = async (req, res, next) => {
   }
 };
 
-export default { getProfile, patchProfile, createPhoto, getMyCards };
+const getMySalesCard = async (req, res, next) => {
+  try {
+    const id = req.auth.userId;
+    const { search, grade, genre, soldOut } = req.query;
+
+    const salesCard = await userService.getMySalesCard(id, {
+      search,
+      grade,
+      genre,
+      soldOut,
+    });
+
+    res.status(200).json(salesCard);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default {
+  getProfile,
+  patchProfile,
+  createPhoto,
+  getMyCards,
+  getMySalesCard,
+};

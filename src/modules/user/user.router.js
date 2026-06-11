@@ -12,5 +12,6 @@ router.post(
   userController.createPhoto
 );
 router.get('/me/cards', auth.verifyAccessToken, userController.getMyCards);
+router.get('/sales', auth.verifyAccessToken, userController.getMySalesCard);
 
 export default router;
