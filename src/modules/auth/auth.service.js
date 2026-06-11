@@ -6,32 +6,25 @@ import prisma from '../../config/db.js';
 async function createUser(user) {
   try {
     const { email, nickname, password, passwordConfirm } = user;
+
+    if (!email || !nickname || !password || !passwordConfirm) {
+      const error = new Error('이메일, 닉네임, 비밀번호가 모두 필요합니다.');
+      error.code = 400;
+      git;
+      throw error;
+    }
     const trimmedEmail = email.trim() ?? '';
     const trimmedNickname = nickname.trim() ?? '';
 
-    if (!trimmedEmail || !trimmedNickname || !password || !passwordConfirm) {
-      const error = new Error('이메일, 닉네임, 비밀번호 가 모두 필요합니다.');
+    if (email !== trimmedEmail || /\s/.test(trimmedEmail)) {
+      const error = new Error('이메일에는 공백을 사용할 수 없습니다.');
       error.code = 400;
-      throw error;
-    }
-
-    const existedUser = await userRepository.findByEmail(email);
-    if (existedUser) {
-      const error = new Error('이메일은 중복된 이메일입니다.');
-      error.code = 409;
-      error.field = 'email';
       throw error;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       const error = new Error('올바른 이메일 형식이 아닙니다.');
-      error.code = 400;
-      throw error;
-    }
-
-    if (/\s/.test(email)) {
-      const error = new Error('이메일에는 공백을 사용할 수 없습니다.');
       error.code = 400;
       throw error;
     }
@@ -60,11 +53,19 @@ async function createUser(user) {
       throw error;
     }
 
+    const existedUser = await userRepository.findByEmail(email);
+    if (existedUser) {
+      const error = new Error('이미 가입된 이메일입니다.');
+      error.code = 409;
+      error.field = 'email';
+      throw error;
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const createdUser = await userRepository.create({
-      email: user.email,
-      nickname: user.nickname,
+      email: trimmedEmail,
+      nickname: trimmedNickname,
       password: hashedPassword,
     });
 
@@ -121,9 +122,28 @@ function createToken(user, type) {
   return token;
 }
 
-async function refreshToken(userId, refreshToken) {
+async function refreshToken(userId, clientRefreshToken) {
   try {
     const user = await userRepository.findById(userId);
+    if (!user) {
+      const error = new Error('존재하지 않는 유저입니다.');
+      error.status = 404;
+      throw error;
+    }
+
+    if (!user.refreshToken) {
+      const error = new Error('토큰이 존재하지 않습니다. 다시 로그인해주세요.');
+      error.status = 401;
+      throw error;
+    }
+
+    if (user.refreshToken !== clientRefreshToken) {
+      const error = new Error(
+        '토큰이 일치하지 않습니다. 유효하지 않은 접근입니다.'
+      );
+      error.status = 401;
+      throw error;
+    }
 
     const newAccessToken = createToken(user);
     const newRefreshToken = createToken(user, 'refresh');
