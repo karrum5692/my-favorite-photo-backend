@@ -1,4 +1,6 @@
 import { PrismaClient } from '@prisma/client';
+import { formatPaginatedResponse } from '../../utils/pagination.js';
+
 const prisma = new PrismaClient();
 
 export const findMarketCards = async ({
@@ -93,11 +95,5 @@ export const findMarketCards = async ({
     };
   });
 
-  const hasNextPage = skip + safeLimit < totalCount;
-
-  return {
-    list: formattedList,
-    totalCount,
-    hasNextPage,
-  };
+  return formatPaginatedResponse(formattedList, totalCount, safeLimit);
 };
