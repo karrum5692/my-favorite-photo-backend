@@ -47,8 +47,13 @@ const createPhoto = async function (req, res, next) {
 const getMyCards = async (req, res, next) => {
   try {
     const userId = req.auth.userId;
+    const { search, grade, genre } = req.query;
 
-    const cards = await userService.getMyCards(userId);
+    const cards = await userService.getMyCards(userId, {
+      search,
+      grade,
+      genre,
+    });
 
     res.status(200).json(cards);
   } catch (error) {
@@ -59,8 +64,7 @@ const getMyCards = async (req, res, next) => {
 const getMySalesCard = async (req, res, next) => {
   try {
     const id = req.auth.userId;
-    console.log('유저 id:', id);
-    const { search, grade, genre, saleType, soldOut } = req.query;
+    const { search, grade, genre, soldOut } = req.query;
 
     const salesCard = await userService.getMySalesCard(id, {
       search,

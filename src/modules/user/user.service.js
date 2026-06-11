@@ -42,7 +42,7 @@ async function patchProfile(id, updateData) {
 }
 
 async function createPhoto(creatorId, cardData) {
-  const newPhoto = await prisma.CardTemplate.create({
+  const newPhoto = await prisma.cardTemplate.create({
     data: {
       creatorId,
       title: cardData.title,
@@ -57,14 +57,38 @@ async function createPhoto(creatorId, cardData) {
   return newPhoto;
 }
 
-async function getMyCards(userId) {
-  const cards = await prisma.photoCard.findMany({
-    where: {
-      ownerId: userId,
-      quantity: {
-        gt: 0,
-      },
+async function getMyCards(userId, filters = {}) {
+  const { search, grade, genre } = filters;
+
+  const allCards = await prisma.photoCard.findMany({
+    where: { ownerId: userId },
+    include: { template: { select: { grade: true } } },
+  });
+
+  const allCounts = allCards.length;
+  const gradeCount = { COMMON: 0, RARE: 0, SUPER_RARE: 0, LEGENDARY: 0 };
+  allCards.forEach((card) => {
+    gradeCount[card.template.grade] += 1;
+  });
+
+  const whereCondition = {
+    ownerId: userId,
+    quantity: {
+      gt: 0,
     },
+  };
+
+  const templateFilter = {};
+  if (search) templateFilter.title = { contains: search, mode: 'insensitive' };
+  if (grade) templateFilter.grade = grade;
+  if (genre) templateFilter.genre = genre;
+
+  if (Object.keys(templateFilter).length > 0) {
+    whereCondition.template = templateFilter;
+  }
+
+  const cards = await prisma.photoCard.findMany({
+    where: whereCondition,
     include: {
       owner: {
         select: {
@@ -82,8 +106,7 @@ async function getMyCards(userId) {
       },
     },
   });
-
-  return cards.map((card) => ({
+  const cardList = cards.map((card) => ({
     id: card.id,
     nickname: card.owner.nickname,
     quantity: card.quantity,
@@ -93,19 +116,21 @@ async function getMyCards(userId) {
     genre: card.template.genre,
     price: card.template.price,
   }));
+
+  return { allCounts, gradeCount, card: cardList };
 }
 
 async function getMySalesCard(id, filters = {}) {
-  const { search, grade, genre, saleType, soldOut } = filters;
+  const { search, grade, genre, soldOut } = filters;
 
-  const allCards = await prisma.photoCard.findMany({
-    where: { ownerId: id },
+  const allSalesCards = await prisma.photoCard.findMany({
+    where: { ownerId: id, status: { in: ['ON_SALE', 'SOLD_OUT'] } },
     include: { template: { select: { grade: true } } },
   });
 
-  const allCounts = allCards.length;
+  const allCounts = allSalesCards.length;
   const gradeCount = { COMMON: 0, RARE: 0, SUPER_RARE: 0, LEGENDARY: 0 };
-  allCards.forEach((card) => {
+  allSalesCards.forEach((card) => {
     gradeCount[card.template.grade] += 1;
   });
 
@@ -122,7 +147,6 @@ async function getMySalesCard(id, filters = {}) {
   if (soldOut === 'SELLING') whereCondition.status = 'SELLING';
   if (soldOut === 'SOLD') whereCondition.status = 'SOLD';
 
-  // 카드 목록 조회
   const salesCard = await prisma.saleListing.findMany({
     where: whereCondition,
     select: {
