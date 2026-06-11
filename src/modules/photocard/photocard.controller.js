@@ -80,18 +80,10 @@ export const getMarketCards = async (req, res, next) => {
       limit: safeLimit,
     });
 
-    // 200 OK 응답 구조
-    return res.status(200).json({
-      success: true,
-      data: result.list,
-      meta: {
-        totalCount: result.totalCount,
-        page: safePage,
-        limit: safeLimit,
-        hasNextPage: result.hasNextPage,
-      },
-    });
+    // 응답 형식은 서비스에서 이미 포맷팅된 형태로 반환되므로 그대로 전달
+    return res.status(200).json(result);
   } catch (error) {
+    console.error(' [getMarketCards Controller Error]:', error);
     next(error);
   }
 };
