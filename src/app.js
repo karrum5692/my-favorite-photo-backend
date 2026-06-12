@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
 import authRouter from './modules/auth/auth.router.js';
 import userRouter from './modules/user/user.router.js';
@@ -9,6 +10,7 @@ import detailRouter from './modules/marketplace/detail/detail.router.js';
 import myCardRouter from './modules/marketplace/saleModule/saleModule.router.js';
 import photocardRouter from './modules/photocard/photocard.router.js';
 import notificationRouter from './modules/notification/notification.router.js';
+import pointRouter from './modules/point/point.router.js';
 
 import errorMiddleware from './middlewares/error.middleware.js';
 
@@ -21,6 +23,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(cookieParser());
 
 // 라우터 등록
 app.use('/auth', authRouter);
@@ -30,6 +33,7 @@ app.use('/market', detailRouter);
 app.use('/market', photocardRouter);
 app.use('/market', myCardRouter);
 app.use('/notifications', notificationRouter);
+app.use('/points', pointRouter);
 
 app.get('/', (req, res) => {
   res.json({ message: '안녕하세요' });
