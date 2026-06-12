@@ -1,4 +1,5 @@
 import prisma from '../../../config/db.js';
+import { HttpError } from '../../../middlewares/HttpError.js';
 
 //카드 상세페이지-구매자
 
@@ -10,6 +11,7 @@ async function getSale(saleId) {
     },
     select: {
       id: true,
+      sellerId: true,
       price: true,
       remainQuantity: true,
       quantity: true,
@@ -51,24 +53,24 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
 
     // 2. 상태 체크 검증
     if (!sale) {
-      throw new Error('판매글을 찾을 수 없습니다.');
+      throw new HttpError(404, '판매글을 찾을 수 없습니다.');
     }
 
     if (sale.status !== 'SELLING') {
-      throw new Error('판매 중인 카드가 아닙니다.');
+      throw new HttpError(400, '판매 중인 카드가 아닙니다.');
     }
 
     // 3. 판매글이 본인 판매글인지
 
     //userId는 이미 로그인한 id
     if (sale.sellerId === buyerId) {
-      throw new Error('본인 카드를 본인이 구매할 수 없습니다.');
+      throw new HttpError(400, '본인 카드를 본인이 구매할 수 없습니다.');
     }
 
     // 4. 판매수량이 정상인지 확인(판매 등록에서 조회한 판매수량이 0인지 아닌지 확인)
     //    구매수량>0 인지 확인
     if (purchaseQuantity <= 0) {
-      throw new Error('구매 수량은 1개 이상이어야 합니다.');
+      throw new HttpError(400, '구매 수량은 1개 이상이어야 합니다.');
     }
 
     // 5. 구매자 포인트 조회(구매자 포인트가 살 수 있을 정도로 가지고 있는지)
@@ -77,14 +79,14 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
     });
 
     if (!buyerPoint) {
-      throw new Error('구매자의 포인트 row가 없습니다.');
+      throw new HttpError(400, '구매자의 포인트 row가 없습니다.');
     }
 
     const totalPurchasingPrice = sale.price * purchaseQuantity;
 
     //UX용(에러) => 밑에 조건부 update로 검증함(Line 157-175)
     // if (totalPurchasingPrice > buyerPoint.balance) {
-    //   throw new Error('포인트 부족으로 구매할 수 없습니다.');
+    //   throw new HttpError(400, '포인트 부족으로 구매할 수 없습니다.');
     // }
 
     // 6. 판매자의 Remain 판매수량 감소(조건부 Update): 판매수량 >=구매수량 검증
@@ -104,7 +106,7 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
     });
 
     if (updatedSale.count === 0) {
-      throw new Error('판매 카드의 재고가 부족합니다.');
+      throw new HttpError(400, '판매 카드의 재고가 부족합니다.');
     }
 
     //판매글 상태 변경(수량 감소 후의 값 기준)
@@ -184,7 +186,8 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
     });
 
     if (buyerTotalPoint.count === 0) {
-      throw new Error(
+      throw new HttpError(
+        400,
         '동시에 결제 시도가 이루어져 포인트 결제에 실패하였습니다.'
       );
     }
@@ -228,35 +231,43 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
 //판매글 수정
 async function updateSale(saleId, data, sellerId) {
   return await prisma.$transaction(async (tx) => {
-    const sale = await tx.saleListing.findUnique({
-      where: { id: saleId },
-    });
+    try {
+      const sale = await tx.saleListing.findUnique({
+        where: { id: saleId },
+      });
 
-    if (!sale) {
-      throw new Error('판매글이 존재하지 않습니다.');
-    }
-
-    if (sale.sellerId !== sellerId) {
-      throw new Error('본인 카드만 수정할 수 있습니다.');
-    }
-
-    const updateData = { ...data };
-
-    if (data.quantity !== undefined) {
-      const soldQuantity = sale.quantity - sale.remainQuantity;
-
-      if (soldQuantity > data.quantity) {
-        throw new Error('이미 팔린 카드 수량보다 더 적게 할 수 없습니다.');
+      if (!sale) {
+        throw new HttpError(404, '판매글이 존재하지 않습니다.');
       }
 
-      updateData.remainQuantity = data.quantity - soldQuantity;
-    }
+      if (sale.sellerId !== sellerId) {
+        throw new HttpError(403, '본인 카드만 수정할 수 있습니다.');
+      }
 
-    const patchedSale = await tx.saleListing.update({
-      where: { id: saleId },
-      data: updateData,
-    });
-    return patchedSale;
+      const updateData = { ...data };
+
+      if (data.quantity !== undefined) {
+        const soldQuantity = sale.quantity - sale.remainQuantity;
+
+        if (soldQuantity > data.quantity) {
+          throw new HttpError(
+            400,
+            '이미 팔린 카드 수량보다 더 적게 할 수 없습니다.'
+          );
+        }
+
+        updateData.remainQuantity = data.quantity - soldQuantity;
+      }
+
+      const patchedSale = await tx.saleListing.update({
+        where: { id: saleId },
+        data: updateData,
+      });
+
+      return patchedSale;
+    } catch (error) {
+      throw error;
+    }
   });
 }
 
@@ -268,20 +279,19 @@ async function deleteSale(saleId, sellerId) {
     });
 
     if (!sale) {
-      throw new Error('판매글이 존재하지 않습니다.');
+      throw new HttpError(404, '판매글이 존재하지 않습니다.');
     }
 
     if (sale.sellerId !== sellerId) {
-      throw new Error('본인 카드만 취소할 수 있습니다.');
+      throw new HttpError(403, '본인 카드의 판매글만 취소할 수 있습니다.');
     }
 
     if (sale.status !== 'SELLING') {
-      throw new Error('판매 중인 게시글만 취소할 수 있습니다.');
+      throw new HttpError(403, '판매 중인 게시글만 취소할 수 있습니다.');
     }
 
-    const cancel = await tx.saleListing.update({
+    const cancel = await tx.saleListing.delete({
       where: { id: saleId },
-      data: { status: 'CANCELLED' },
     });
 
     //포토카드 status = owned
