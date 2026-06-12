@@ -14,33 +14,28 @@ export const findMarketCards = async ({
   const safeLimit = limit > 100 ? 100 : limit >= 1 ? limit : 10;
   const skip = (safePage - 1) * safeLimit;
 
-  const whereCondition = {};
-  const templateFilter = {};
-
-  // 1. 텍스트 검색 조건 설정
+  // 🎯 [수정] 참조 무결성을 위해 검색 조건과 목록 조회 조건을 완전히 분리 정의
+  const baseTemplateFilter = {};
   if (search) {
-    templateFilter.OR = [
+    baseTemplateFilter.OR = [
       { title: { contains: search, mode: 'insensitive' } },
       { description: { contains: search, mode: 'insensitive' } },
     ];
   }
 
-  // 검색어만 반영된 공통 기준 (통계 수치 산정용 기본 베이스)
-  const baseWhereCondition =
-    Object.keys(templateFilter).length > 0
-      ? { photoCard: { template: { ...templateFilter } } }
-      : {};
+  // 1. 검색어만 반영된 통계용 독립 조건 생성
+  const baseWhereCondition = search
+    ? { photoCard: { template: { ...baseTemplateFilter } } }
+    : {};
 
-  // 2. 실제 목록 조회용 개별 필터 조건 반영
-  if (grade) {
-    templateFilter.grade = grade;
-  }
-  if (genre) {
-    templateFilter.genre = genre;
-  }
+  // 2. 실제 목록 및 totalCount 조회용 필터 조건 생성
+  const listTemplateFilter = { ...baseTemplateFilter };
+  if (grade) listTemplateFilter.grade = grade;
+  if (genre) listTemplateFilter.genre = genre;
 
-  if (Object.keys(templateFilter).length > 0) {
-    whereCondition.photoCard = { template: templateFilter };
+  const whereCondition = {};
+  if (Object.keys(listTemplateFilter).length > 0) {
+    whereCondition.photoCard = { template: listTemplateFilter };
   }
   if (status) {
     whereCondition.status = status;
@@ -64,12 +59,10 @@ export const findMarketCards = async ({
       break;
   }
 
-  // 4. DB 병렬 쿼리 수행 (현재 필터링된 결과 개수 & 목록 데이터 가져오기)
+  // 4. DB 병렬 쿼리 수행
   const [totalCount, listings, allListingsForStats] = await Promise.all([
-    // 현재 조건에 부합하는 총 개수
     prisma.saleListing.count({ where: whereCondition }),
 
-    // 현재 조건에 부합하는 페이지네이션 목록 데이터
     prisma.saleListing.findMany({
       where: whereCondition,
       orderBy: orderCondition,
@@ -81,7 +74,6 @@ export const findMarketCards = async ({
       },
     }),
 
-    // 수십번의 카운트 쿼리 대신 검색어가 적용된 전체 대상 데이터를 하나로 가져와 메모리 집계
     prisma.saleListing.findMany({
       where: baseWhereCondition,
       include: {
@@ -90,7 +82,7 @@ export const findMarketCards = async ({
     }),
   ]);
 
-  // 5. 고성능 자바스크립트 연산으로 필터 탭별 카운트 추출
+  // 5. 필터 탭별 카운트 추출
   const filterCounts = {
     grade: { COMMON: 0, RARE: 0, SUPER_RARE: 0, LEGENDARY: 0 },
     genre: {
@@ -121,7 +113,7 @@ export const findMarketCards = async ({
       filterCounts.status[itemStatus]++;
   });
 
-  // 6. 프론트엔드 컴포넌트(PhotoCardItem 등) 규격에 완벽히 매핑
+  // 6. 매핑
   const formattedList = listings.map((item) => ({
     id: item.id,
     title: item.photoCard?.template?.title || '',
@@ -131,16 +123,17 @@ export const findMarketCards = async ({
     sellerNickname: item.seller?.nickname || '익명',
     price: item.price,
     remainQuantity: item.remainQuantity,
-    totalQuantity: item.quantity, // 원래 전체 수량
+    totalQuantity: item.quantity,
     status: item.status,
   }));
 
-  const hasNextPage = skip + safeLimit < totalCount;
+  // 🎯 지난번에 교정한 정확한 무한 스크롤 다음 페이지 판별식
+  const hasNextPage = skip + listings.length < totalCount;
 
   return {
     list: formattedList,
     totalCount,
     hasNextPage,
-    filterCounts, // 모바일 및 필터 헤더에 완벽히 바인딩될 연산 통계 객체
+    filterCounts,
   };
 };
