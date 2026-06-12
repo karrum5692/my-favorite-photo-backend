@@ -12,6 +12,10 @@ async function getDetailCard(req, res, next) {
 
     const detailCard = await detailService.getSale(saleId);
 
+    if (!detailCard) {
+      throw new HttpError(404, '판매글을 찾을 수가 없습니다.');
+    }
+
     return res.status(200).json({
       success: true,
       message: '상세카드 정보 가져오기 성공',

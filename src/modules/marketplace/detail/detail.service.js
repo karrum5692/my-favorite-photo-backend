@@ -257,11 +257,21 @@ async function updateSale(saleId, data, sellerId) {
         }
 
         updateData.remainQuantity = data.quantity - soldQuantity;
+
+        updateData.status =
+          updateData.remainQuantity === 0 ? 'SOLD' : 'SELLING';
       }
 
       const patchedSale = await tx.saleListing.update({
         where: { id: saleId },
         data: updateData,
+      });
+
+      await tx.photoCard.update({
+        where: { id: sale.photoCardId },
+        data: {
+          status: patchedSale.remainQuantity === 0 ? 'SOLD_OUT' : 'ON_SALE',
+        },
       });
 
       return patchedSale;
@@ -287,7 +297,7 @@ async function deleteSale(saleId, sellerId) {
     }
 
     if (sale.status !== 'SELLING') {
-      throw new HttpError(403, '판매 중인 게시글만 취소할 수 있습니다.');
+      throw new HttpError(400, '판매 중인 게시글만 취소할 수 있습니다.');
     }
 
     const cancel = await tx.saleListing.delete({
