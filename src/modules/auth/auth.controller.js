@@ -51,7 +51,7 @@ userController.post(
   async (req, res, next) => {
     try {
       const refreshToken = req.cookies.refreshToken;
-      const { id: userId } = req.auth;
+      const { userId } = req.auth;
 
       const { newAccessToken, newRefreshToken } =
         await userService.refreshToken(userId, refreshToken);

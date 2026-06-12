@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { HttpError } from '../../middlewares/HttpError.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -9,9 +10,7 @@ async function getProfile(id) {
     select: { nickname: true, point: { select: { balance: true } } },
   });
   if (!user) {
-    const error = new Error('존재하지 않는 유저입니다.');
-    error.code = 404;
-    throw error;
+    throw new HttpError(404, '존재하지 않는 유저입니다.');
   }
   return filteredPassword(user);
 }
@@ -26,9 +25,7 @@ async function patchProfile(id, updateData) {
     where: { id },
   });
   if (!existUser) {
-    const error = new Error('존재하지 않는 유저입니다.');
-    error.code = 404;
-    throw error;
+    throw new HttpError(404, '존재하지 않는 유저입니다.');
   }
 
   const user = await prisma.user.update({

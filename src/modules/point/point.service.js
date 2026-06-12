@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../../config/db.js';
+import { HttpError } from '../../middlewares/HttpError.js';
 
 async function getPoint(id) {
   const point = await prisma.point.findUnique({
@@ -8,9 +7,7 @@ async function getPoint(id) {
     select: { balance: true },
   });
   if (!point) {
-    const error = new Error('존재하지 않는 유저입니다.');
-    error.code = 404;
-    throw error;
+    throw new HttpError(404, '존재하지 않는 유저입니다.');
   }
   return point;
 }
@@ -36,7 +33,7 @@ async function randomPoint(id) {
         OR: [{ lastEventAt: null }, { lastEventAt: { lte: oneHourAgo } }],
       },
       data: {
-        balance: { increment: point },
+        balance: { increment: amount },
         lastEventAt: now,
       },
     });
@@ -48,14 +45,10 @@ async function randomPoint(id) {
       });
 
       if (!exists) {
-        const error = new Error('존재하지 않는 유저입니다.');
-        error.code = 404;
-        throw error;
+        throw new HttpError(404, '존재하지 않는 유저입니다.');
       }
 
-      const error = new Error('아직 1시간이 지나지 않았습니다.');
-      error.code = 400;
-      throw error;
+      throw new HttpError(400, '아직 1시간이 지나지 않았습니다.');
     }
 
     const updatedPoint = await tx.point.findUnique({
@@ -63,7 +56,7 @@ async function randomPoint(id) {
     });
 
     const history = await tx.pointHistory.create({
-      data: { userId: id, amount: point, type: 'RANDOM_BOX' },
+      data: { userId: id, amount, type: 'RANDOM_BOX' },
     });
 
     return [updatedPoint, history];
