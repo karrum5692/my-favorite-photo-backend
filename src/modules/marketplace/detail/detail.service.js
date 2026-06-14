@@ -20,6 +20,7 @@ async function getSale(saleId) {
       exchangeDescription: true,
       photoCard: {
         select: {
+          owner: { select: { nickname: true } },
           template: {
             select: {
               title: true,
@@ -27,11 +28,6 @@ async function getSale(saleId) {
               grade: true,
               genre: true,
               description: true,
-              creator: {
-                select: {
-                  nickname: true,
-                },
-              },
             },
           },
         },
