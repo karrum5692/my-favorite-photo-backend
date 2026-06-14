@@ -42,11 +42,11 @@ async function postSale(req, res, next) {
       throw new Error('판매 가격의 값이 유효하지 않습니다.');
     }
 
-    if (Object.keys(Grade).includes(exchangeGrade)) {
+    if (!Object.keys(Grade).includes(exchangeGrade)) {
       throw new Error('카드 등급의 값이 유효하지 않습니다.');
     }
 
-    if (Object.keys(Genre).includes(exchangeGenre)) {
+    if (!Object.keys(Genre).includes(exchangeGenre)) {
       throw new Error('카드 장르의 값이 유효하지 않습니다.');
     }
 

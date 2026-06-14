@@ -36,8 +36,20 @@ async function createSale(ownerId, photoCardId, data) {
       throw new Error('본인의 카드가 아닙니다.');
     }
 
-    if (data.quantity !== card.quantity) {
-      throw new Error('보유 수량 전체만 판매할 수 있습니다.');
+    // 판매글이 존재하는지 -> 동일 카드가 selling 중인지 확인
+    const existedList = await tx.saleListing.findUnique({
+      where: { id: photoCardId, status: 'SELLING' },
+    });
+
+    if (existedList) {
+      throw new Error(
+        '이미 판매 중인 카드입니다. 판매글을 확인하시길 바랍니다.'
+      );
+    }
+
+    // 보유 수량 범위 내에서 판매수량을 선택해야함
+    if (data.quantity > card.quantity) {
+      throw new Error('판매 수량은 보유 수량을 초과할 수 없습니다.');
     }
 
     const changedStatus = await tx.photoCard.updateMany({
