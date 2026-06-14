@@ -168,6 +168,19 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
       },
     });
 
+    //판매자의 포토카드 수량 감소
+    await tx.photoCard.update({
+      where: {
+        templateId_ownerId: {
+          templateId,
+          ownerId: sale.sellerId,
+        },
+      },
+      data: {
+        quantity: { decrement: purchaseQuantity },
+      },
+    });
+
     //9. 포인트
 
     // buyer.point 감소
