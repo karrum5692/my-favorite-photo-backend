@@ -13,6 +13,7 @@ async function getMySale(ownerId) {
           imageUrl: true,
           grade: true,
           genre: true,
+          price: true,
           creator: {
             select: {
               nickname: true,
