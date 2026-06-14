@@ -117,14 +117,6 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
           status: 'SOLD',
         },
       });
-
-      //photocard 상태 변경
-      await tx.photoCard.update({
-        where: { id: changedStatus.photoCardId },
-        data: {
-          status: 'SOLD_OUT',
-        },
-      });
     }
 
     //7. 구매자의 구매수량 증가시키기(구매한 숫자만큼)
@@ -153,7 +145,7 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
     });
 
     //판매자의 포토카드 수량 감소
-    await tx.photoCard.update({
+    const sellerQuantity = await tx.photoCard.update({
       where: {
         templateId_ownerId: {
           templateId,
@@ -164,6 +156,35 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
         quantity: { decrement: purchaseQuantity },
       },
     });
+
+    //상태 변화 조건
+    if (sellerQuantity.quantity === 0) {
+      await tx.photoCard.update({
+        where: {
+          templateId_ownerId: {
+            templateId,
+            ownerId: sale.sellerId,
+          },
+        },
+        data: {
+          status: 'SOLD_OUT',
+        },
+      });
+    }
+
+    if (sellerQuantity.quantity > 0) {
+      await tx.photoCard.update({
+        where: {
+          templateId_ownerId: {
+            templateId,
+            ownerId: sale.sellerId,
+          },
+        },
+        data: {
+          status: 'OWNED',
+        },
+      });
+    }
 
     //8. 구매처리
     const purchases = await tx.purchase.create({

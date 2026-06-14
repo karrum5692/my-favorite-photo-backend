@@ -37,8 +37,8 @@ async function createSale(ownerId, photoCardId, data) {
     }
 
     // 판매글이 존재하는지 -> 동일 카드가 selling 중인지 확인
-    const existedList = await tx.saleListing.findUnique({
-      where: { id: photoCardId, status: 'SELLING' },
+    const existedList = await tx.saleListing.findFirst({
+      where: { photoCardId: photoCardId, status: 'SELLING' },
     });
 
     if (existedList) {
