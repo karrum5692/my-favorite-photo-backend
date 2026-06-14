@@ -6,6 +6,7 @@ async function getMySale(ownerId) {
     where: { ownerId: ownerId, status: 'OWNED' },
     select: {
       id: true,
+      owner: { select: { nickname: true } },
       quantity: true,
       template: {
         select: {
@@ -14,11 +15,6 @@ async function getMySale(ownerId) {
           grade: true,
           genre: true,
           price: true,
-          creator: {
-            select: {
-              nickname: true,
-            },
-          },
         },
       },
     },

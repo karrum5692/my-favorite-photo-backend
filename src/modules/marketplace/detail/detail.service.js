@@ -131,26 +131,14 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
       });
     }
 
-    //7. 구매처리
-    const purchases = await tx.purchase.create({
-      data: {
-        buyer: { connect: { id: buyerId } },
-        seller: { connect: { id: sale.sellerId } },
-        photoCard: { connect: { id: sale.photoCardId } },
-        saleListing: { connect: { id: saleId } },
-        quantity: purchaseQuantity,
-        price: sale.price,
-      },
-    });
-
-    //8. 구매자의 구매수량 증가시키기(구매한 숫자만큼)
+    //7. 구매자의 구매수량 증가시키기(구매한 숫자만큼)
     // 구매자가 이미 그 카드를 가지고 있으면 기존 카드 수량 + 구매수량 (update)
     // 처음 구매하는 카드면 새 row 생성(create)
 
     const templateId = sale.photoCard.templateId;
 
     //구매자 구매 수량 증가
-    await tx.photoCard.upsert({
+    const buyerPhotoCard = await tx.photoCard.upsert({
       where: {
         templateId_ownerId: {
           templateId,
@@ -178,6 +166,18 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
       },
       data: {
         quantity: { decrement: purchaseQuantity },
+      },
+    });
+
+    //8. 구매처리
+    const purchases = await tx.purchase.create({
+      data: {
+        buyer: { connect: { id: buyerId } },
+        seller: { connect: { id: sale.sellerId } },
+        photoCard: { connect: { id: buyerPhotoCard.id } },
+        saleListing: { connect: { id: saleId } },
+        quantity: purchaseQuantity,
+        price: sale.price,
       },
     });
 
