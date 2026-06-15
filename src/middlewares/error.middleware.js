@@ -1,9 +1,13 @@
 import { Prisma } from '@prisma/client';
 import { HttpError } from './HttpError.js';
+import logger from '../config/logger.js';
+import { Sentry } from '../config/sentry.js';
 
 const isProd = process.env.NODE_ENV === 'production';
 
 function mapPrismaError(err) {
+  if (!Prisma?.PrismaClientKnownRequestError) return null;
+
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     switch (err.code) {
       case 'P2002': {
@@ -38,10 +42,15 @@ const errorMiddleware = (err, req, res, next) => {
   const status = error.status || 500;
 
   if (status >= 500) {
-    console.error(
-      `[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`,
-      err
-    );
+    logger.error({
+      method: req.method,
+      url: req.originalUrl,
+      status,
+      message: err.message,
+      stack: err.stack,
+    });
+
+    Sentry.captureException(err);
   }
 
   const message =
