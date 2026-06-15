@@ -64,10 +64,14 @@ export const createProposal = async (
       status: 'PENDING',
     },
   });
-  await notificationService.createReceivedNotification(
-    saleListing.sellerId,
-    proposal.id
-  );
+  try {
+    await notificationService.createReceivedNotification(
+      saleListing.sellerId,
+      proposal.id
+    );
+  } catch (error) {
+    console.log('교환 제안 알림 생성 실패:', error);
+  }
 
   return proposal;
 };

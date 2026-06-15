@@ -17,7 +17,7 @@ async function getNotification(userId) {
   });
 }
 
-async function updateNotification(id, userId) {
+async function readNotification(id, userId) {
   return await prisma.notification.updateMany({
     where: {
       id,
@@ -125,7 +125,7 @@ async function findSaleListingById(saleListingId) {
 
 export default {
   getNotification,
-  updateNotification,
+  readNotification,
   readAllNotification,
   createNotification,
   findTradeProposalById,

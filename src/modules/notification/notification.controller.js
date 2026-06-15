@@ -11,15 +11,15 @@ async function getNotifications(req, res, next) {
   }
 }
 
-async function updateNotification(req, res, next) {
+async function readNotification(req, res, next) {
   try {
     const id = Number(req.params.id);
 
-    if (isNaN(id)) {
+    if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).json({ message: 'id가 유효하지 않습니다.' });
     }
 
-    const notification = await notificationRepository.updateNotification(
+    const notification = await notificationRepository.readNotification(
       id,
       req.auth.userId
     );
@@ -43,6 +43,6 @@ async function readAllNotifications(req, res, next) {
 
 export default {
   getNotifications,
-  updateNotification,
+  readNotification,
   readAllNotifications,
 };

@@ -20,7 +20,7 @@ router.patch(
 router.patch(
   '/:id',
   auth.verifyAccessToken,
-  notificationController.updateNotification
+  notificationController.readNotification
 );
 
 export default router;
