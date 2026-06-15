@@ -56,7 +56,7 @@ async function createPhoto(creatorId, cardData) {
 }
 
 async function getMyCards(userId, filters = {}) {
-  const { search, grade, genre } = filters;
+  const { search, grade, genre, page = 1, limit = 9 } = filters;
 
   const allCards = await prisma.photoCard.findMany({
     where: {
@@ -92,6 +92,8 @@ async function getMyCards(userId, filters = {}) {
 
   const cards = await prisma.photoCard.findMany({
     where: whereCondition,
+    skip: (page - 1) * limit,
+    take: limit,
     include: {
       owner: {
         select: {
@@ -120,11 +122,13 @@ async function getMyCards(userId, filters = {}) {
     price: card.template.price,
   }));
 
-  return { allCounts, gradeCount, card: cardList };
+  const totalPages = Math.ceil(allCounts / limit);
+
+  return { allCounts, gradeCount, card: cardList, totalPages };
 }
 
 async function getMySalesCard(id, filters = {}) {
-  const { search, grade, genre, soldOut } = filters;
+  const { search, grade, genre, soldOut, page = 1, limit = 9 } = filters;
 
   const salesBaseWhere = {
     sellerId: id,
@@ -165,6 +169,8 @@ async function getMySalesCard(id, filters = {}) {
 
   const salesCard = await prisma.saleListing.findMany({
     where: whereCondition,
+    skip: (page - 1) * limit,
+    take: limit,
     select: {
       price: true,
       remainQuantity: true,
@@ -189,8 +195,9 @@ async function getMySalesCard(id, filters = {}) {
       },
     },
   });
+  const totalPages = Math.ceil(allCounts / limit);
 
-  return { allCounts, gradeCount, salesCard };
+  return { allCounts, gradeCount, salesCard, totalPages };
 }
 
 export default {
