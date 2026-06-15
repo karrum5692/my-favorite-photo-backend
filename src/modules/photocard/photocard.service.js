@@ -1,6 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { formatPaginatedResponse } from '../../utils/pagination.js';
-
 const prisma = new PrismaClient();
 
 export const findMarketCards = async ({
@@ -14,41 +12,37 @@ export const findMarketCards = async ({
 }) => {
   const safePage = page >= 1 ? page : 1;
   const safeLimit = limit > 100 ? 100 : limit >= 1 ? limit : 10;
-
   const skip = (safePage - 1) * safeLimit;
-  const whereCondition = {};
-  const templateFilter = {};
 
-  // 1. 텍스트 검색 조건
+  // 🎯 [수정] 참조 무결성을 위해 검색 조건과 목록 조회 조건을 완전히 분리 정의
+  const baseTemplateFilter = {};
   if (search) {
-    templateFilter.OR = [
+    baseTemplateFilter.OR = [
       { title: { contains: search, mode: 'insensitive' } },
       { description: { contains: search, mode: 'insensitive' } },
     ];
   }
 
-  // 2. 단일 필터 조건 반영
-  if (grade) {
-    templateFilter.grade = grade;
-  }
-  if (genre) {
-    templateFilter.genre = genre;
-  }
+  // 1. 검색어만 반영된 통계용 독립 조건 생성
+  const baseWhereCondition = search
+    ? { photoCard: { template: { ...baseTemplateFilter } } }
+    : {};
 
-  if (Object.keys(templateFilter).length > 0) {
-    whereCondition.photoCard = {
-      template: templateFilter,
-    };
-  }
+  // 2. 실제 목록 및 totalCount 조회용 필터 조건 생성
+  const listTemplateFilter = { ...baseTemplateFilter };
+  if (grade) listTemplateFilter.grade = grade;
+  if (genre) listTemplateFilter.genre = genre;
 
-  // 매진 여부 필터
+  const whereCondition = {};
+  if (Object.keys(listTemplateFilter).length > 0) {
+    whereCondition.photoCard = { template: listTemplateFilter };
+  }
   if (status) {
-    whereCondition.status = status; // 'SELLING' 또는 'SOLD'가 그대로 매칭됨
+    whereCondition.status = status;
   }
 
   // 3. 정렬 조건 설정
   let orderCondition;
-
   switch (orderBy) {
     case 'oldest':
       orderCondition = [{ createdAt: 'asc' }, { id: 'asc' }];
@@ -60,13 +54,15 @@ export const findMarketCards = async ({
       orderCondition = [{ price: 'desc' }, { id: 'asc' }];
       break;
     case 'latest':
-    default: // latest이거나 빈 값일 때 중복 없이 한 번에 처리!
+    default:
       orderCondition = [{ createdAt: 'desc' }, { id: 'asc' }];
       break;
   }
+
   // 4. DB 병렬 쿼리 수행
-  const [totalCount, listings] = await Promise.all([
+  const [totalCount, listings, allListingsForStats] = await Promise.all([
     prisma.saleListing.count({ where: whereCondition }),
+
     prisma.saleListing.findMany({
       where: whereCondition,
       orderBy: orderCondition,
@@ -77,23 +73,67 @@ export const findMarketCards = async ({
         seller: { select: { nickname: true } },
       },
     }),
+
+    prisma.saleListing.findMany({
+      where: baseWhereCondition,
+      include: {
+        photoCard: { include: { template: true } },
+      },
+    }),
   ]);
 
-  // 5. SOLD OUT 데이터 포맷팅 가공
-  const formattedList = listings.map((item) => {
-    return {
-      id: item.id,
-      title: item.photoCard.template.title,
-      imageUrl: item.photoCard.template.imageUrl, // 빠진거 추가
-      grade: item.photoCard.template.grade,
-      genre: item.photoCard.template.genre,
-      sellerNickname: item.seller.nickname,
-      price: item.price,
-      remainQuantity: item.remainQuantity, // 빠진거 추가
-      totalQuantity: item.quantity, // 빠진거 추가
-      status: item.status, // SELLING 또는 SOLD 그대로 유지하여 도메인 일관성 보장
-    };
+  // 5. 필터 탭별 카운트 추출
+  const filterCounts = {
+    grade: { COMMON: 0, RARE: 0, SUPER_RARE: 0, LEGENDARY: 0 },
+    genre: {
+      ALBUM: 0,
+      SPECIAL: 0,
+      FAN_SIGN: 0,
+      SEASON_GREETING: 0,
+      FAN_MEETING: 0,
+      CONCERT: 0,
+      MD: 0,
+      COLLABORATION: 0,
+      FAN_CLUB: 0,
+      OTHER: 0,
+    },
+    status: { SELLING: 0, SOLD: 0 },
+  };
+
+  allListingsForStats.forEach((item) => {
+    const itemGrade = item.photoCard?.template?.grade;
+    const itemGenre = item.photoCard?.template?.genre;
+    const itemStatus = item.status;
+
+    if (filterCounts.grade[itemGrade] !== undefined)
+      filterCounts.grade[itemGrade]++;
+    if (filterCounts.genre[itemGenre] !== undefined)
+      filterCounts.genre[itemGenre]++;
+    if (filterCounts.status[itemStatus] !== undefined)
+      filterCounts.status[itemStatus]++;
   });
 
-  return formatPaginatedResponse(formattedList, totalCount, safeLimit);
+  // 6. 매핑
+  const formattedList = listings.map((item) => ({
+    id: item.id,
+    title: item.photoCard?.template?.title || '',
+    imageUrl: item.photoCard?.template?.imageUrl || '',
+    grade: item.photoCard?.template?.grade || 'COMMON',
+    genre: item.photoCard?.template?.genre || 'OTHER',
+    sellerNickname: item.seller?.nickname || '익명',
+    price: item.price,
+    remainQuantity: item.remainQuantity,
+    totalQuantity: item.quantity,
+    status: item.status,
+  }));
+
+  // 🎯 지난번에 교정한 정확한 무한 스크롤 다음 페이지 판별식
+  const hasNextPage = skip + listings.length < totalCount;
+
+  return {
+    list: formattedList,
+    totalCount,
+    hasNextPage,
+    filterCounts,
+  };
 };

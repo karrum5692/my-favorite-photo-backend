@@ -35,14 +35,6 @@ async function update(id, data) {
   });
 }
 
-async function createOrUpdate(provider, providerId, email, nickname) {
-  return prisma.user.upsert({
-    where: { provider, providerId },
-    update: { email, nickname },
-    create: { provider, providerId, email, nickname },
-  });
-}
-
 async function findRefreshTokenByUserId(userId) {
   return prisma.refreshToken.findUnique({
     where: {
@@ -83,7 +75,6 @@ export default {
   findByEmail,
   create,
   update,
-  createOrUpdate,
   deleteRefreshToken,
   updateRefreshToken,
   findRefreshTokenByUserId,
