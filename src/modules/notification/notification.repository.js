@@ -22,6 +22,7 @@ async function readNotification(id, userId) {
     where: {
       id,
       userId,
+      isRead: false,
     },
     data: {
       isRead: true,
@@ -33,6 +34,7 @@ async function readAllNotification(userId) {
   return await prisma.notification.updateMany({
     where: {
       userId,
+      isRead: false,
     },
     data: {
       isRead: true,
