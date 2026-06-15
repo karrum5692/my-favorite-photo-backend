@@ -21,6 +21,7 @@ async function getSale(saleId) {
       exchangeDescription: true,
       photoCard: {
         select: {
+          owner: { select: { nickname: true } },
           template: {
             select: {
               title: true,
@@ -28,11 +29,6 @@ async function getSale(saleId) {
               grade: true,
               genre: true,
               description: true,
-              creator: {
-                select: {
-                  nickname: true,
-                },
-              },
             },
           },
         },
@@ -124,36 +120,16 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
           status: 'SOLD',
         },
       });
-
-      //photocard 상태 변경
-      await tx.photoCard.update({
-        where: { id: changedStatus.photoCardId },
-        data: {
-          status: 'SOLD_OUT',
-        },
-      });
     }
 
-    //7. 구매처리
-    const purchases = await tx.purchase.create({
-      data: {
-        buyer: { connect: { id: buyerId } },
-        seller: { connect: { id: sale.sellerId } },
-        photoCard: { connect: { id: sale.photoCardId } },
-        saleListing: { connect: { id: saleId } },
-        quantity: purchaseQuantity,
-        price: sale.price,
-      },
-    });
-
-    //8. 구매자의 구매수량 증가시키기(구매한 숫자만큼)
+    //7. 구매자의 구매수량 증가시키기(구매한 숫자만큼)
     // 구매자가 이미 그 카드를 가지고 있으면 기존 카드 수량 + 구매수량 (update)
     // 처음 구매하는 카드면 새 row 생성(create)
 
     const templateId = sale.photoCard.templateId;
 
     //구매자 구매 수량 증가
-    await tx.photoCard.upsert({
+    const buyerPhotoCard = await tx.photoCard.upsert({
       where: {
         templateId_ownerId: {
           templateId,
@@ -168,6 +144,60 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
         ownerId: buyerId,
         quantity: purchaseQuantity,
         status: 'OWNED',
+      },
+    });
+
+    //판매자의 포토카드 수량 감소
+    const sellerQuantity = await tx.photoCard.update({
+      where: {
+        templateId_ownerId: {
+          templateId,
+          ownerId: sale.sellerId,
+        },
+      },
+      data: {
+        quantity: { decrement: purchaseQuantity },
+      },
+    });
+
+    //상태 변화 조건
+    if (sellerQuantity.quantity === 0) {
+      await tx.photoCard.update({
+        where: {
+          templateId_ownerId: {
+            templateId,
+            ownerId: sale.sellerId,
+          },
+        },
+        data: {
+          status: 'SOLD_OUT',
+        },
+      });
+    }
+
+    if (sellerQuantity.quantity > 0) {
+      await tx.photoCard.update({
+        where: {
+          templateId_ownerId: {
+            templateId,
+            ownerId: sale.sellerId,
+          },
+        },
+        data: {
+          status: 'OWNED',
+        },
+      });
+    }
+
+    //8. 구매처리
+    const purchases = await tx.purchase.create({
+      data: {
+        buyer: { connect: { id: buyerId } },
+        seller: { connect: { id: sale.sellerId } },
+        photoCard: { connect: { id: buyerPhotoCard.id } },
+        saleListing: { connect: { id: saleId } },
+        quantity: purchaseQuantity,
+        price: sale.price,
       },
     });
 
