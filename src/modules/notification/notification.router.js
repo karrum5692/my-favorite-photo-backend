@@ -23,18 +23,4 @@ router.patch(
   notificationController.updateNotification
 );
 
-// 기존 라우터들 아래에 추가
-router.post('/test', auth.verifyAccessToken, async (req, res) => {
-  try {
-    const notification = await notificationRepository.createNotification({
-      userId: req.auth.userId,
-      type: req.body.type,
-      message: req.body.message,
-    });
-    res.status(201).json(notification);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
 export default router;

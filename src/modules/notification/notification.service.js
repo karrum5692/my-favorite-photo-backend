@@ -47,7 +47,7 @@ async function createTradeAcceptedNotification(receiverId, proposalId) {
     await notificationRepository.findTradeProposalById(proposalId);
 
   const data = {
-    nickname: proposal.proposer.nickname,
+    nickname: proposal.saleListing.seller.nickname,
     grade: proposal.saleListing.photoCard.template.grade,
     title: proposal.saleListing.photoCard.template.title,
   };
@@ -81,20 +81,19 @@ async function createSoldoutNotification(receiverId, saleListingId) {
 }
 
 // 구매자가 받는 구매 성공 알림
-async function createSoldNotification(receiverId, saleListingId) {
-  const saleListing =
-    await notificationRepository.findSaleListingById(saleListingId);
+async function createSoldNotification(buyerId, purchaseId) {
+  const purchase = await notificationRepository.findPurchaseById(purchaseId);
 
   const data = {
-    grade: saleListing.photoCard.template.grade,
-    title: saleListing.photoCard.template.title,
-    quantity: saleListing.quantity,
+    grade: purchase.saleListing.photoCard.template.grade,
+    title: purchase.saleListing.photoCard.template.title,
+    quantity: purchase.quantity,
   };
 
   const message = notificationMessage('SOLD', data);
 
   return notificationRepository.createNotification({
-    userId: receiverId,
+    userId: buyerId,
     type: 'SOLD',
     message,
   });

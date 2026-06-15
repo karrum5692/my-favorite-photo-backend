@@ -1,6 +1,6 @@
 import prisma from '../../../config/db.js';
 import { HttpError } from '../../../middlewares/HttpError.js';
-import notificationService from '../notification/notification.service.js';
+import notificationService from '../../notification/notification.service.js';
 
 //카드 상세페이지-구매자
 
@@ -263,7 +263,10 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
     result.purchases.id
   );
 
-  await notificationService.createSoldNotification(buyerId, saleId);
+  await notificationService.createSoldNotification(
+    buyerId,
+    result.purchases.id
+  );
 
   if (result.isSoldOut) {
     await notificationService.createSoldoutNotification(

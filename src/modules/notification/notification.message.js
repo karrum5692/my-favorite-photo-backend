@@ -17,6 +17,9 @@ function notificationMessage(type, data) {
 
     case 'SOLD_OUT': // 판매글 품절 알림.
       return `[${data.grade} | ${data.title}]이 품절되었습니다.`;
+
+    default:
+      throw new Error(`Unknown notification type: ${type}`);
   }
 }
 

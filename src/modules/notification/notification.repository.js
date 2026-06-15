@@ -2,7 +2,7 @@ import prisma from '../../config/db.js';
 
 async function createNotification(data) {
   return prisma.notification.create({
-    data: data,
+    data,
   });
 }
 
@@ -53,6 +53,11 @@ async function findTradeProposalById(proposalId) {
       },
       saleListing: {
         include: {
+          seller: {
+            select: {
+              nickname: true,
+            },
+          },
           photoCard: {
             include: {
               template: {

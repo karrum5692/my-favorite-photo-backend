@@ -219,10 +219,14 @@ export const acceptProposal = async (proposalId, currentUserId) => {
 
     return accepted;
   });
-  await notificationService.createTradeAcceptedNotification(
-    accepted.proposerId,
-    proposalId
-  );
+  try {
+    await notificationService.createTradeAcceptedNotification(
+      accepted.proposerId,
+      proposalId
+    );
+  } catch (err) {
+    console.log('교환 성사 알림 실패:', err);
+  }
 
   return accepted;
 };
@@ -267,10 +271,14 @@ export const rejectProposal = async (proposalId, currentUserId) => {
   });
 
   // 알림 추가
-  await notificationService.createTradeRejectedNotification(
-    proposal.proposerId,
-    proposalId
-  );
+  try {
+    await notificationService.createTradeRejectedNotification(
+      proposal.proposerId,
+      proposalId
+    );
+  } catch (err) {
+    console.log('교환 거절 알림 생성 실패:', err);
+  }
 
   return rejected;
 };
