@@ -1,5 +1,6 @@
 import prisma from '../../../config/db.js';
 import { HttpError } from '../../../middlewares/HttpError.js';
+import notificationService from '../../notification/notification.service.js';
 
 //카드 상세페이지-구매자
 
@@ -38,7 +39,7 @@ async function getSale(saleId) {
 
 // 구매하기
 async function postPurchase(saleId, purchaseQuantity, buyerId) {
-  return await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     //1. 판매 등록 조회
     const sale = await tx.saleListing.findUnique({
       where: { id: saleId },
@@ -110,7 +111,9 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
       where: { id: saleId },
     });
 
-    if (changedStatus.remainQuantity === 0) {
+    const isSoldOut = changedStatus.remainQuantity === 0;
+
+    if (isSoldOut) {
       await tx.saleListing.update({
         where: { id: saleId },
         data: {
@@ -252,8 +255,27 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
       },
     });
 
-    return purchases;
+    return { purchases, sellerId: sale.sellerId, isSoldOut };
   });
+
+  await notificationService.createPurchaseNotification(
+    result.sellerId,
+    result.purchases.id
+  );
+
+  await notificationService.createSoldNotification(
+    buyerId,
+    result.purchases.id
+  );
+
+  if (result.isSoldOut) {
+    await notificationService.createSoldoutNotification(
+      result.sellerId,
+      saleId
+    );
+  }
+
+  return result.purchases;
 }
 
 //카드 상세페이지-판매자
