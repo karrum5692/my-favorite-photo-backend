@@ -13,6 +13,7 @@ import notificationRouter from './modules/notification/notification.router.js';
 import pointRouter from './modules/point/point.router.js';
 
 import errorMiddleware from './middlewares/error.middleware.js';
+import { HttpError } from './middlewares/HttpError.js';
 
 const app = express();
 
@@ -37,6 +38,10 @@ app.use('/points', pointRouter);
 
 app.get('/', (req, res) => {
   res.json({ message: '안녕하세요' });
+});
+
+app.use((req, res, next) => {
+  next(new HttpError(404, '요청하신 경로를 찾을 수 없습니다.'));
 });
 
 app.use(errorMiddleware);
