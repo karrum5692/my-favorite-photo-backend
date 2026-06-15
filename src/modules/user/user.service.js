@@ -122,7 +122,10 @@ async function getMyCards(userId, filters = {}) {
     price: card.template.price,
   }));
 
-  const totalPages = Math.ceil(allCounts / limit);
+  const filteredCount = await prisma.photoCard.count({
+    where: whereCondition,
+  });
+  const totalPages = Math.ceil(filteredCount / limit) || 1;
 
   return { allCounts, gradeCount, card: cardList, totalPages };
 }
@@ -195,7 +198,10 @@ async function getMySalesCard(id, filters = {}) {
       },
     },
   });
-  const totalPages = Math.ceil(allCounts / limit);
+  const filteredCount = await prisma.saleListing.count({
+    where: whereCondition,
+  });
+  const totalPages = Math.ceil(filteredCount / limit) || 1;
 
   return { allCounts, gradeCount, salesCard, totalPages };
 }

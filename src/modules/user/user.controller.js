@@ -49,12 +49,19 @@ const getMyCards = async (req, res, next) => {
     const userId = req.auth.userId;
     const { search, grade, genre, page, limit } = req.query;
 
+    const parsedPage = Number(page);
+    const parsedLimit = Number(limit);
+    const safePage =
+      Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    const safeLimit =
+      Number.isInteger(parsedLimit) && parsedLimit > 0 ? parsedLimit : 9;
+
     const cards = await userService.getMyCards(userId, {
       search,
       grade,
       genre,
-      page: page ? Number(page) : 1,
-      limit: limit ? Number(limit) : 9,
+      page: safePage,
+      limit: safeLimit,
     });
 
     res.status(200).json(cards);
@@ -67,14 +74,20 @@ const getMySalesCard = async (req, res, next) => {
   try {
     const id = req.auth.userId;
     const { search, grade, genre, soldOut, page, limit } = req.query;
+    const parsedPage = Number(page);
+    const parsedLimit = Number(limit);
+    const safePage =
+      Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    const safeLimit =
+      Number.isInteger(parsedLimit) && parsedLimit > 0 ? parsedLimit : 9;
 
     const salesCard = await userService.getMySalesCard(id, {
       search,
       grade,
       genre,
       soldOut,
-      page: page ? Number(page) : 1,
-      limit: limit ? Number(limit) : 9,
+      page: safePage,
+      limit: safeLimit,
     });
 
     res.status(200).json(salesCard);
