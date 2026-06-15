@@ -1,23 +1,26 @@
 import express from 'express';
 import notificationController from './notification.controller.js';
 import auth from '../../middlewares/auth.middleware.js';
+import notificationRepository from './notification.repository.js';
 
 const router = express.Router();
 
 router.get(
-  '/notifications',
+  '/',
   auth.verifyAccessToken,
   notificationController.getNotifications
 );
+
 router.patch(
-  '/notifications/:id',
-  auth.verifyAccessToken,
-  notificationController.getNotifications
-);
-router.patch(
-  '/notifications/read-all',
+  '/read-all',
   auth.verifyAccessToken,
   notificationController.readAllNotifications
+);
+
+router.patch(
+  '/:id',
+  auth.verifyAccessToken,
+  notificationController.readNotification
 );
 
 export default router;
