@@ -18,6 +18,13 @@ router.get(
   tradeController.getProposals
 );
 
+// 내가 보낸 교환 제안 목록 조회
+router.get(
+  '/proposals/sent',
+  auth.verifyAccessToken,
+  tradeController.getMySentProposals
+);
+
 // 교환 수락
 router.patch(
   '/proposals/:proposalId/accept',

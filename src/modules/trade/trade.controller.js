@@ -80,3 +80,19 @@ export const rejectProposal = async (req, res, next) => {
     next(err);
   }
 };
+
+// 내가 보낸 교환 제안 목록
+export const getMySentProposals = async (req, res, next) => {
+  try {
+    const currentUserId = req.auth.userId;
+    const result = await tradeService.getSentProposals(currentUserId);
+
+    res.status(200).json({
+      success: true,
+      message: '조회 성공',
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

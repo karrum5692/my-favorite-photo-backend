@@ -106,6 +106,26 @@ export const getProposals = async (saleListingId, currentUserId) => {
   });
 };
 
+// 내가 보낸 교환 제안 목록 조회
+export const getSentProposals = async (currentUserId) => {
+  return await prisma.tradeProposal.findMany({
+    where: {
+      proposerId: currentUserId,
+    },
+    include: {
+      offeredCard: true,
+      saleListing: {
+        include: {
+          photoCard: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+};
+
 // 교환 수락
 export const acceptProposal = async (proposalId, currentUserId) => {
   const accepted = await prisma.$transaction(async (tx) => {
