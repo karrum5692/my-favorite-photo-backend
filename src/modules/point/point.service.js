@@ -4,7 +4,7 @@ import { HttpError } from '../../middlewares/HttpError.js';
 async function getPoint(id) {
   const point = await prisma.point.findUnique({
     where: { userId: id },
-    select: { balance: true },
+    select: { balance: true, lastEventAt: true },
   });
   if (!point) {
     throw new HttpError(404, '존재하지 않는 유저입니다.');
