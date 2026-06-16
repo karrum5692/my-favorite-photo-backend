@@ -1,13 +1,45 @@
 import prisma from '../../../config/db.js';
 
-//나의 포토카드 가져오기
-async function getMySale(ownerId) {
-  return await prisma.photoCard.findMany({
-    where: { ownerId: ownerId, status: 'OWNED' },
-    select: {
-      id: true,
-      owner: { select: { nickname: true } },
-      quantity: true,
+//내가 owned한 포토카드 가져오기
+async function getMyOwnedCards(userId, filters = {}) {
+  const { search, grade, genre } = filters;
+
+  const allCards = await prisma.photoCard.findMany({
+    where: {
+      ownerId: userId,
+      quantity: {
+        gt: 0,
+      },
+      status: 'OWNED',
+    },
+    include: { template: { select: { grade: true } } },
+  });
+
+  const whereCondition = {
+    ownerId: userId,
+    quantity: {
+      gt: 0,
+    },
+    status: 'OWNED',
+  };
+
+  const templateFilter = {};
+  if (search) templateFilter.title = { contains: search, mode: 'insensitive' };
+  if (grade) templateFilter.grade = grade;
+  if (genre) templateFilter.genre = genre;
+
+  if (Object.keys(templateFilter).length > 0) {
+    whereCondition.template = templateFilter;
+  }
+
+  const cards = await prisma.photoCard.findMany({
+    where: whereCondition,
+    include: {
+      owner: {
+        select: {
+          nickname: true,
+        },
+      },
       template: {
         select: {
           title: true,
@@ -19,6 +51,19 @@ async function getMySale(ownerId) {
       },
     },
   });
+
+  const cardList = cards.map((card) => ({
+    id: card.id,
+    nickname: card.owner.nickname,
+    quantity: card.quantity,
+    title: card.template.title,
+    imageUrl: card.template.imageUrl,
+    grade: card.template.grade,
+    genre: card.template.genre,
+    price: card.template.price,
+  }));
+
+  return { card: cardList };
 }
 
 //포토카드 판매하기 생성
@@ -83,4 +128,4 @@ async function createSale(ownerId, photoCardId, data) {
   });
 }
 
-export default { getMySale, createSale };
+export default { getMyOwnedCards, createSale };
