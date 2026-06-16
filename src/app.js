@@ -52,6 +52,10 @@ app.get('/', (req, res) => {
   res.json({ message: '안녕하세요' });
 });
 
+app.get('/debug-sentry-mail', () => {
+  throw new Error('이메일 알림 테스트 ' + Date.now());
+});
+
 app.use((req, res, next) => {
   next(new HttpError(404, '요청하신 경로를 찾을 수 없습니다.'));
 });
