@@ -162,6 +162,7 @@ model Notification {
   type      NotificationType
   message   String           @db.VarChar
   isRead    Boolean          @default(false)
+  relatedId Int?
   createdAt DateTime         @default(now()) @db.Timestamp(6)
   user      User             @relation(fields: [userId], references: [id])
 }

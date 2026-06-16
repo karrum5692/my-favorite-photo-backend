@@ -1,7 +1,6 @@
 import notificationRepository from './notification.repository.js';
 import notificationMessage from './notification.message.js';
 
-// 판매자 에게 구매자가 교환 제안 알림 .
 async function createReceivedNotification(receiverId, proposalId) {
   const proposal =
     await notificationRepository.findTradeProposalById(proposalId);
@@ -18,10 +17,10 @@ async function createReceivedNotification(receiverId, proposalId) {
     userId: receiverId,
     type: 'PROPOSAL_RECEIVED',
     message,
+    relatedId: proposal.saleListing.id,
   });
 }
 
-// 판매자가 받는 구매 성공 알림
 async function createPurchaseNotification(receiverId, purchaseId) {
   const purchase = await notificationRepository.findPurchaseById(purchaseId);
 
@@ -38,10 +37,10 @@ async function createPurchaseNotification(receiverId, purchaseId) {
     userId: receiverId,
     type: 'PURCHASE_COMPLETED',
     message,
+    relatedId: purchase.saleListing.id,
   });
 }
 
-// 교환 성사 완료 알림 .
 async function createTradeAcceptedNotification(receiverId, proposalId) {
   const proposal =
     await notificationRepository.findTradeProposalById(proposalId);
@@ -58,10 +57,10 @@ async function createTradeAcceptedNotification(receiverId, proposalId) {
     userId: receiverId,
     type: 'PROPOSAL_ACCEPTED',
     message,
+    relatedId: proposal.saleListing.id,
   });
 }
 
-// 판매 품절 알림
 async function createSoldoutNotification(receiverId, saleListingId) {
   const saleListing =
     await notificationRepository.findSaleListingById(saleListingId);
@@ -77,10 +76,10 @@ async function createSoldoutNotification(receiverId, saleListingId) {
     userId: receiverId,
     type: 'SOLD_OUT',
     message,
+    relatedId: saleListing.id,
   });
 }
 
-// 구매자가 받는 구매 성공 알림
 async function createSoldNotification(buyerId, purchaseId) {
   const purchase = await notificationRepository.findPurchaseById(purchaseId);
 
@@ -96,10 +95,10 @@ async function createSoldNotification(buyerId, purchaseId) {
     userId: buyerId,
     type: 'SOLD',
     message,
+    relatedId: purchase.saleListing.id,
   });
 }
 
-//교환 거절 알림 .
 async function createTradeRejectedNotification(receiverId, proposalId) {
   const proposal =
     await notificationRepository.findTradeProposalById(proposalId);
@@ -115,6 +114,7 @@ async function createTradeRejectedNotification(receiverId, proposalId) {
     userId: receiverId,
     type: 'PROPOSAL_REJECTED',
     message,
+    relatedId: proposal.saleListing.id,
   });
 }
 
