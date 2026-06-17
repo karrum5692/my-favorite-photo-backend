@@ -71,9 +71,19 @@ export const getProposals = async (saleListingId, currentUserId) => {
   return prisma.tradeProposal.findMany({
     where: { saleListingId },
     include: {
-      proposer: true,
+      proposer: {
+        select: { id: true, nickname: true },
+      },
       offeredCard: {
         include: { template: true },
+      },
+      saleListing: {
+        include: {
+          seller: { select: { id: true, nickname: true } },
+          photoCard: {
+            include: { template: true },
+          },
+        },
       },
     },
     orderBy: { createdAt: 'desc' },
@@ -88,11 +98,15 @@ export const getSentProposals = async (currentUserId) => {
   return await prisma.tradeProposal.findMany({
     where: { proposerId: currentUserId },
     include: {
+      proposer: {
+        select: { id: true, nickname: true },
+      },
       offeredCard: {
         include: { template: true },
       },
       saleListing: {
         include: {
+          seller: { select: { id: true, nickname: true } },
           photoCard: {
             include: { template: true },
           },
