@@ -357,12 +357,10 @@ async function deleteSale(saleId, sellerId) {
     });
 
     //포토카드 status = owned
-    if (cancel.status === 'CANCELLED') {
-      await tx.photoCard.update({
-        where: { id: sale.photoCardId },
-        data: { status: 'OWNED' },
-      });
-    }
+    await tx.photoCard.update({
+      where: { id: sale.photoCardId },
+      data: { status: 'OWNED' },
+    });
 
     return cancel;
   });
