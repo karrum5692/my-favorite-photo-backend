@@ -1,15 +1,20 @@
 import saleModuleService from './saleModule.service.js';
 import { Grade, Genre } from '@prisma/client';
 
-async function getMyCard(req, res, next) {
+async function getMyOwnedCard(req, res, next) {
   try {
     const ownerId = req.auth.userId;
+    const { search, grade, genre } = req.query;
 
-    const cards = await saleModuleService.getMySale(ownerId);
+    const cards = await saleModuleService.getMyOwnedCards(ownerId, {
+      search,
+      grade,
+      genre,
+    });
 
     return res.status(200).json({
       success: true,
-      message: '나의 포토카드 가져오기 성공',
+      message: '나의 OWNED 포토카드 가져오기 성공',
       data: cards,
     });
   } catch (error) {
@@ -74,4 +79,4 @@ async function postSale(req, res, next) {
   }
 }
 
-export default { getMyCard, postSale };
+export default { getMyOwnedCard, postSale };

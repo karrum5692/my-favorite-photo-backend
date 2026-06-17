@@ -4,7 +4,12 @@ import auth from '../../../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.get('/mycard', auth.verifyAccessToken, saleModuleController.getMyCard);
+router.get(
+  '/mycard/owned',
+  auth.verifyAccessToken,
+  saleModuleController.getMyOwnedCard
+);
+
 router.post(
   '/mycard/:id',
   auth.verifyAccessToken,
