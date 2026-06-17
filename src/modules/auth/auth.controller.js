@@ -6,6 +6,8 @@ import passport from '../../config/passport.js';
 
 const userController = express.Router();
 
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+
 userController.post('/signup', async (req, res, next) => {
   try {
     const { email, nickname, password, passwordConfirm } = req.body;
@@ -103,7 +105,7 @@ userController.get('/oauth/google/callback', (req, res, next) => {
     try {
       // 1. passport 실패
       if (err || !user) {
-        return res.redirect('http://localhost:3000/login?error=oauth_failed');
+        return res.redirect(`${clientUrl}/login?error=oauth_failed`);
       }
 
       // 2. 토큰 생성
@@ -118,11 +120,9 @@ userController.get('/oauth/google/callback', (req, res, next) => {
         secure: false,
       });
 
-      return res.redirect(
-        `http://localhost:3000/oauth-success?token=${accessToken}`
-      );
+      return res.redirect(`${clientUrl}/oauth-success?token=${accessToken}`);
     } catch (error) {
-      return res.redirect('http://localhost:3000/login?error=server_error');
+      return res.redirect(`${clientUrl}/login?error=server_error`);
     }
   })(req, res, next);
 });
