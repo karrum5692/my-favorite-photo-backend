@@ -175,7 +175,10 @@ async function getMySalesCard(id, filters = {}) {
     whereCondition.status = 'SELLING';
     whereCondition.exchangeGrade = null; // 교환 중 카드 제외
   }
-  if (soldOut === 'SOLD') whereCondition.status = 'SOLD';
+  if (soldOut === 'SOLD') {
+    whereCondition.status = 'SOLD';
+    whereCondition.exchangeGrade = null; // 교환 중 카드 제외
+  }
 
   const salesCard = await prisma.saleListing.findMany({
     where: whereCondition,
