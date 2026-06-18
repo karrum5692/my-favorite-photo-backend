@@ -115,6 +115,7 @@ async function getMyCards(userId, filters = {}) {
       },
     },
   });
+
   const cardList = cards.map((card) => ({
     id: card.id,
     nickname: card.owner.nickname,
@@ -131,7 +132,18 @@ async function getMyCards(userId, filters = {}) {
   });
   const totalPages = Math.ceil(filteredCount / limit) || 1;
 
-  return { allCounts, gradeCount, card: cardList, totalPages };
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { nickname: true },
+  });
+
+  return {
+    allCounts,
+    gradeCount,
+    card: cardList,
+    totalPages,
+    nickname: user?.nickname || '',
+  };
 }
 
 async function getMySalesCard(id, filters = {}) {
@@ -173,11 +185,11 @@ async function getMySalesCard(id, filters = {}) {
   }
   if (soldOut === 'SELLING') {
     whereCondition.status = 'SELLING';
-    whereCondition.exchangeGrade = null; // 교환 중 카드 제외
+    whereCondition.exchangeGrade = null;
   }
   if (soldOut === 'SOLD') {
     whereCondition.status = 'SOLD';
-    whereCondition.exchangeGrade = null; // 교환 중 카드 제외
+    whereCondition.exchangeGrade = null;
   }
 
   const salesCard = await prisma.saleListing.findMany({
@@ -208,12 +220,24 @@ async function getMySalesCard(id, filters = {}) {
       },
     },
   });
+
   const filteredCount = await prisma.saleListing.count({
     where: whereCondition,
   });
   const totalPages = Math.ceil(filteredCount / limit) || 1;
 
-  return { allCounts, gradeCount, salesCard, totalPages };
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { nickname: true },
+  });
+
+  return {
+    allCounts,
+    gradeCount,
+    salesCard,
+    totalPages,
+    nickname: user?.nickname || '',
+  };
 }
 
 export default {
