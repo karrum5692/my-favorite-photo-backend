@@ -28,7 +28,8 @@ passport.use(
             providerType: 'GOOGLE',
             providerId: profile.id,
             profileImageUrl: profile.photos?.[0]?.value,
-            point: { create: { balance: 0 } },
+            // 테스트용으로 기본 10만단위 가입시 지급
+            point: { create: { balance: 100000 } },
           },
         });
         return done(null, user);
