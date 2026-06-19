@@ -27,8 +27,18 @@ const patchProfile = async function (req, res, next) {
 const createPhoto = async function (req, res, next) {
   try {
     const id = req.auth.userId;
-    const { title, grade, genre, price, totalIssued, imageUrl, description } =
-      req.body;
+
+    if (req.body.price) req.body.price = Number(req.body.price);
+    if (req.body.totalIssued)
+      req.body.totalIssued = Number(req.body.totalIssued);
+
+    const { title, grade, genre, price, totalIssued, description } = req.body;
+
+    let imageUrl = req.body.imageUrl;
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+    }
+
     const photo = await userService.createPhoto(id, {
       title,
       grade,
@@ -38,6 +48,7 @@ const createPhoto = async function (req, res, next) {
       imageUrl,
       description,
     });
+
     res.status(201).json(photo);
   } catch (error) {
     next(error);
