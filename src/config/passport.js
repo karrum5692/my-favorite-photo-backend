@@ -28,6 +28,7 @@ passport.use(
             providerType: 'GOOGLE',
             providerId: profile.id,
             profileImageUrl: profile.photos?.[0]?.value,
+            point: { create: { balance: 0 } },
           },
         });
         return done(null, user);

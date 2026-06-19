@@ -22,6 +22,9 @@ async function create(user) {
       email: user.email,
       nickname: user.nickname,
       password: user.password,
+      point: {
+        create: { balance: 0 },
+      },
     },
   });
 }
