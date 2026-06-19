@@ -13,32 +13,54 @@ async function createUser(user) {
   const trimmedEmail = email.trim();
   const trimmedNickname = nickname.trim();
 
+  if (!trimmedEmail) {
+    throw new HttpError(400, '이메일을 입력해주세요.');
+  }
+
+  if (!trimmedNickname) {
+    throw new HttpError(400, '닉네임을 입력해주세요.');
+  }
+
   if (email !== trimmedEmail || /\s/.test(trimmedEmail)) {
     throw new HttpError(400, '이메일에는 공백을 사용할 수 없습니다.');
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+
+  if (!emailRegex.test(trimmedEmail)) {
     throw new HttpError(400, '올바른 이메일 형식이 아닙니다.');
   }
 
   if (nickname !== trimmedNickname) {
-    throw new HttpError(400, '닉네임에는 앞뒤 공백은 사용할 수 없습니다.');
+    throw new HttpError(400, '닉네임에는 앞뒤 공백을 사용할 수 없습니다.');
   }
 
   if (/\s/.test(password)) {
     throw new HttpError(400, '비밀번호에는 공백을 사용할 수 없습니다.');
   }
 
-  if (password.length < 8) {
-    throw new HttpError(400, '비밀번호는 8자 이상이어야 합니다.');
-  }
-
   if (password !== passwordConfirm) {
     throw new HttpError(400, '비밀번호가 일치하지 않습니다.');
   }
 
-  const existedUser = await userRepository.findByEmail(email);
+  if (password.length < 8) {
+    throw new HttpError(400, '비밀번호는 8자 이상이어야 합니다.');
+  }
+
+  if (!/[A-Za-z]/.test(password)) {
+    throw new HttpError(400, '비밀번호에 영문자를 포함해야 합니다.');
+  }
+
+  if (!/\d/.test(password)) {
+    throw new HttpError(400, '비밀번호에 숫자를 포함해야 합니다.');
+  }
+
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
+    throw new HttpError(400, '비밀번호에 특수문자를 포함해야 합니다.');
+  }
+
+  const existedUser = await userRepository.findByEmail(trimmedEmail);
+
   if (existedUser) {
     const error = new HttpError(409, '이미 가입된 이메일입니다.');
     error.field = 'email';
