@@ -23,7 +23,8 @@ async function create(user) {
       nickname: user.nickname,
       password: user.password,
       point: {
-        create: { balance: 0 },
+        // 테스트용으로 기본 10만단위 가입시 지급
+        create: { balance: 100000 },
       },
     },
   });
