@@ -2,12 +2,19 @@ import prisma from '../../config/db.js';
 import { HttpError } from '../../middlewares/HttpError.js';
 
 async function getPoint(id) {
-  const point = await prisma.point.findUnique({
+  let point = await prisma.point.findUnique({
     where: { userId: id },
     select: { balance: true, lastEventAt: true },
   });
   if (!point) {
-    throw new HttpError(404, '존재하지 않는 유저입니다.');
+    const userExists = await prisma.user.findUnique({ where: { id } });
+    if (!userExists) {
+      throw new HttpError(404, '존재하지 않는 유저입니다.');
+    }
+    point = await prisma.point.create({
+      data: { userId: id, balance: 0 },
+      select: { balance: true, lastEventAt: true },
+    });
   }
   return point;
 }
