@@ -117,7 +117,7 @@ userController.get('/oauth/google/callback', (req, res, next) => {
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         sameSite: 'none',
-        secure: false,
+        secure: true,
       });
 
       return res.redirect(`${clientUrl}/oauth-success?token=${accessToken}`);
