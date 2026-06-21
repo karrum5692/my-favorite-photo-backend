@@ -4,17 +4,6 @@ import prisma from '../../../config/db.js';
 async function getMyOwnedCards(userId, filters = {}) {
   const { search, grade, genre } = filters;
 
-  const allCards = await prisma.photoCard.findMany({
-    where: {
-      ownerId: userId,
-      quantity: {
-        gt: 0,
-      },
-      status: 'OWNED',
-    },
-    include: { template: { select: { grade: true } } },
-  });
-
   const whereCondition = {
     ownerId: userId,
     quantity: {
@@ -81,6 +70,13 @@ async function createSale(ownerId, photoCardId, data) {
       throw new Error('본인의 카드가 아닙니다.');
     }
 
+    //카드 상태 먼저 검증
+    if (card.status !== 'OWNED') {
+      throw new Error(
+        `카드가 ${card.status}상태라 판매글을 등록할 수 없습니다.`
+      );
+    }
+
     // 판매글이 존재하는지 -> 동일 카드가 selling 중인지 확인
     const existedList = await tx.saleListing.findFirst({
       where: { photoCardId: photoCardId, status: 'SELLING' },
@@ -97,19 +93,14 @@ async function createSale(ownerId, photoCardId, data) {
       throw new Error('판매 수량은 보유 수량을 초과할 수 없습니다.');
     }
 
-    const changedStatus = await tx.photoCard.updateMany({
+    await tx.photoCard.update({
       where: {
         id: photoCardId,
-        status: 'OWNED',
       },
       data: {
         status: 'ON_SALE',
       },
     });
-
-    if (changedStatus.count === 0) {
-      throw new Error('이미 판매 중이거나 상태가 변경되었습니다.');
-    }
 
     const sale = await tx.saleListing.create({
       data: {
