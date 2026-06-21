@@ -1,3 +1,4 @@
+import { HttpError } from '../../middlewares/HttpError.js';
 import userService from './user.service.js';
 
 const getProfile = async function (req, res, next) {
@@ -12,8 +13,6 @@ const getProfile = async function (req, res, next) {
 
 const patchProfile = async function (req, res, next) {
   try {
-    console.log('req.body:', req.body); // ← 추가
-    console.log('req.file:', req.file);
     const id = req.auth.userId;
     const { nickname } = req.body;
     let profileImageUrl = req.body.profileImageUrl;
@@ -39,6 +38,17 @@ const createPhoto = async function (req, res, next) {
       req.body.totalIssued = Number(req.body.totalIssued);
 
     const { title, grade, genre, price, totalIssued, description } = req.body;
+
+    if (!title || !title.trim())
+      throw new HttpError(400, '제목을 입력해 주세요.');
+    if (!grade) throw new HttpError(400, '등급을 선택해 주세요.');
+    if (!genre) throw new HttpError(400, '장르를 선택해 주세요.');
+    if (!price || price < 0)
+      throw new HttpError(400, '올바른 가격을 입력해 주세요.');
+    if (!totalIssued) throw new HttpError(400, '총 발행량을 입력해 주세요.');
+    if (totalIssued > 20)
+      throw new HttpError(400, '총 발행량은 20장을 초과할 수 없습니다.');
+    if (!req.file) throw new HttpError(400, '사진을 업로드해 주세요.');
 
     let imageUrl = req.body.imageUrl;
     if (req.file) {
