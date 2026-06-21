@@ -56,6 +56,13 @@ async function createPhoto(creatorId, cardData) {
       totalIssued: cardData.totalIssued,
     },
   });
+  await prisma.photoCard.create({
+    data: {
+      templateId: newPhoto.id,
+      ownerId: creatorId,
+      quantity: cardData.totalIssued,
+    },
+  });
   return newPhoto;
 }
 

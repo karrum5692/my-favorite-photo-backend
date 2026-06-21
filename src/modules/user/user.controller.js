@@ -12,8 +12,14 @@ const getProfile = async function (req, res, next) {
 
 const patchProfile = async function (req, res, next) {
   try {
+    console.log('req.body:', req.body); // ← 추가
+    console.log('req.file:', req.file);
     const id = req.auth.userId;
-    const { nickname, profileImageUrl } = req.body;
+    const { nickname } = req.body;
+    let profileImageUrl = req.body.profileImageUrl;
+    if (req.file) {
+      profileImageUrl = req.file.path;
+    }
     const user = await userService.patchProfile(id, {
       nickname,
       profileImageUrl,
@@ -36,7 +42,7 @@ const createPhoto = async function (req, res, next) {
 
     let imageUrl = req.body.imageUrl;
     if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+      imageUrl = req.file.path;
     }
 
     const photo = await userService.createPhoto(id, {
@@ -51,6 +57,7 @@ const createPhoto = async function (req, res, next) {
 
     res.status(201).json(photo);
   } catch (error) {
+    console.log('에러:', error);
     next(error);
   }
 };

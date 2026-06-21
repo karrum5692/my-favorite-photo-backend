@@ -1,12 +1,21 @@
 import { Router } from 'express';
-import multer from 'multer';
 import userController from './user.controller.js';
 import auth from '../../middlewares/auth.middleware.js';
+import { upload } from '../../utils/cloudinary.js';
 
 const router = Router();
-const upload = multer();
+
 router.get('/me', auth.verifyAccessToken, userController.getProfile);
-router.patch('/me', auth.verifyAccessToken, userController.patchProfile);
+router.patch(
+  '/me',
+  auth.verifyAccessToken,
+  (req, res, next) => {
+    console.log('Content-Type:', req.headers['content-type']); // ← 추가
+    next();
+  },
+  upload.single('image'),
+  userController.patchProfile
+);
 router.post(
   '/gallery/cards',
   auth.verifyAccessToken,
