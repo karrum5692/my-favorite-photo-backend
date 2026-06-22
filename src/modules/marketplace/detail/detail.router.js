@@ -19,7 +19,7 @@ router.patch(
   auth.verifyAccessToken,
   detailController.patchedCard
 );
-router.delete(
+router.patch(
   '/cards/:id',
   auth.verifyAccessToken,
   detailController.cancelledCard
