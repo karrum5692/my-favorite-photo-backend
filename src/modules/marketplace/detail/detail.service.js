@@ -162,7 +162,7 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
     });
 
     //상태 변화 조건
-    if (sellerQuantity.quantity === 0) {
+    if (isSoldOut && sellerQuantity.quantity === 0) {
       await tx.photoCard.update({
         where: {
           templateId_ownerId: {
@@ -176,7 +176,7 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
       });
     }
 
-    if (sellerQuantity.quantity > 0) {
+    if (isSoldOut && sellerQuantity.quantity > 0) {
       await tx.photoCard.update({
         where: {
           templateId_ownerId: {
