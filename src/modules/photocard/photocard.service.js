@@ -23,10 +23,13 @@ export const findMarketCards = async ({
     ];
   }
 
-  // 1. 검색어만 반영된 통계용 독립 조건 생성
-  const baseWhereCondition = search
-    ? { photoCard: { template: { ...baseTemplateFilter } } }
-    : {};
+  // 1. 검색어만 반영된 통계용 독립 조건 생성 (CANCELLED 원천 차단)
+  const baseWhereCondition = {
+    status: { in: ['SELLING', 'SOLD'] },
+  };
+  if (search) {
+    baseWhereCondition.photoCard = { template: baseTemplateFilter };
+  }
 
   // 2. 실제 목록 및 totalCount 조회용 필터 조건 생성
   const listTemplateFilter = { ...baseTemplateFilter };
@@ -37,8 +40,11 @@ export const findMarketCards = async ({
   if (Object.keys(listTemplateFilter).length > 0) {
     whereCondition.photoCard = { template: listTemplateFilter };
   }
+
   if (status) {
     whereCondition.status = status;
+  } else {
+    whereCondition.status = { in: ['SELLING', 'SOLD'] };
   }
 
   // 3. 정렬 조건 설정
