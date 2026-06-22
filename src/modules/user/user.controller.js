@@ -1,3 +1,4 @@
+import { HttpError } from '../../middlewares/HttpError.js';
 import userService from './user.service.js';
 
 const getProfile = async function (req, res, next) {
@@ -13,7 +14,11 @@ const getProfile = async function (req, res, next) {
 const patchProfile = async function (req, res, next) {
   try {
     const id = req.auth.userId;
-    const { nickname, profileImageUrl } = req.body;
+    const { nickname } = req.body;
+    let profileImageUrl = req.body.profileImageUrl;
+    if (req.file) {
+      profileImageUrl = req.file.path;
+    }
     const user = await userService.patchProfile(id, {
       nickname,
       profileImageUrl,
@@ -27,8 +32,29 @@ const patchProfile = async function (req, res, next) {
 const createPhoto = async function (req, res, next) {
   try {
     const id = req.auth.userId;
-    const { title, grade, genre, price, totalIssued, imageUrl, description } =
-      req.body;
+
+    if (req.body.price) req.body.price = Number(req.body.price);
+    if (req.body.totalIssued)
+      req.body.totalIssued = Number(req.body.totalIssued);
+
+    const { title, grade, genre, price, totalIssued, description } = req.body;
+
+    if (!title || !title.trim())
+      throw new HttpError(400, '제목을 입력해 주세요.');
+    if (!grade) throw new HttpError(400, '등급을 선택해 주세요.');
+    if (!genre) throw new HttpError(400, '장르를 선택해 주세요.');
+    if (!price || price < 0)
+      throw new HttpError(400, '올바른 가격을 입력해 주세요.');
+    if (!totalIssued) throw new HttpError(400, '총 발행량을 입력해 주세요.');
+    if (totalIssued > 20)
+      throw new HttpError(400, '총 발행량은 20장을 초과할 수 없습니다.');
+    if (!req.file) throw new HttpError(400, '사진을 업로드해 주세요.');
+
+    let imageUrl = req.body.imageUrl;
+    if (req.file) {
+      imageUrl = req.file.path;
+    }
+
     const photo = await userService.createPhoto(id, {
       title,
       grade,
@@ -38,8 +64,10 @@ const createPhoto = async function (req, res, next) {
       imageUrl,
       description,
     });
+
     res.status(201).json(photo);
   } catch (error) {
+    console.log('에러:', error);
     next(error);
   }
 };
