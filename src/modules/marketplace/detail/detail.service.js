@@ -22,6 +22,7 @@ async function getSale(saleId) {
       photoCard: {
         select: {
           owner: { select: { nickname: true } },
+          quantity: true,
           template: {
             select: {
               title: true,
