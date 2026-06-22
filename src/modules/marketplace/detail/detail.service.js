@@ -22,6 +22,7 @@ async function getSale(saleId) {
       photoCard: {
         select: {
           owner: { select: { nickname: true } },
+          quantity: true,
           template: {
             select: {
               title: true,
@@ -334,7 +335,7 @@ async function updateSale(saleId, data, sellerId) {
 }
 
 //판매글 취소
-async function deleteSale(saleId, sellerId) {
+async function cancelSale(saleId, sellerId) {
   return await prisma.$transaction(async (tx) => {
     const sale = await tx.saleListing.findUnique({
       where: { id: saleId },
@@ -352,8 +353,9 @@ async function deleteSale(saleId, sellerId) {
       throw new HttpError(400, '판매 중인 게시글만 취소할 수 있습니다.');
     }
 
-    const cancel = await tx.saleListing.delete({
+    const cancel = await tx.saleListing.update({
       where: { id: saleId },
+      data: { status: 'CANCELLED' },
     });
 
     //포토카드 status = owned
@@ -370,5 +372,5 @@ export default {
   getSale,
   postPurchase,
   updateSale,
-  deleteSale,
+  cancelSale,
 };
