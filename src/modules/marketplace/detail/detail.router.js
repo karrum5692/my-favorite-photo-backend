@@ -20,7 +20,7 @@ router.patch(
   detailController.patchedCard
 );
 router.patch(
-  '/cards/:id',
+  '/cards/cancel/:id',
   auth.verifyAccessToken,
   detailController.cancelledCard
 );

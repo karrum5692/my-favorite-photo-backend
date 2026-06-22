@@ -126,7 +126,7 @@ async function cancelledCard(req, res, next) {
       throw new HttpError(400, '판매글의 id가 유효하지 않습니다.');
     }
 
-    const cancelCard = await detailService.deleteSale(saleId, sellerId);
+    const cancelCard = await detailService.cancelSale(saleId, sellerId);
 
     return res
       .status(200)
