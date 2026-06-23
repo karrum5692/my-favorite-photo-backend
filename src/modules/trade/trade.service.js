@@ -165,7 +165,7 @@ export const acceptProposal = async (proposalId, currentUserId) => {
       });
       await tx.photoCard.update({
         where: { id: saleListing.photoCard.id },
-        data: { quantity: 0 },
+        data: { quantity: 0, status: 'SOLD_OUT' },
       });
     } else {
       await tx.photoCard.update({
@@ -190,7 +190,7 @@ export const acceptProposal = async (proposalId, currentUserId) => {
       });
       await tx.photoCard.update({
         where: { id: offeredCard.id },
-        data: { quantity: 0 },
+        data: { quantity: 0, status: 'SOLD_OUT' },
       });
     } else {
       await tx.photoCard.update({
