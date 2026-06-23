@@ -135,9 +135,16 @@ export const acceptProposal = async (proposalId, currentUserId) => {
     if (!saleListing || saleListing.sellerId !== currentUserId)
       throw new Error('권한이 없습니다.');
 
+    const tradeQty = proposal.quantity;
+
+    // remainQuantity 차감, 0이 되면 SOLD 처리
+    const newRemainQty = saleListing.remainQuantity - tradeQty;
     const listingUpdateResult = await tx.saleListing.updateMany({
       where: { id: saleListing.id, status: 'SELLING' },
-      data: { status: 'SOLD' },
+      data: {
+        remainQuantity: newRemainQty,
+        ...(newRemainQty <= 0 ? { status: 'SOLD' } : {}),
+      },
     });
     if (listingUpdateResult.count === 0)
       throw new Error('이미 처리된 거래입니다.');
@@ -146,8 +153,8 @@ export const acceptProposal = async (proposalId, currentUserId) => {
       where: { id: proposal.offeredCardId },
     });
 
-    // 카드 교환 (소유권 변경 or quantity merge)
-    // 판매자 카드 → 제안자에게
+    // 판매자 카드 → 제안자에게 (tradeQty만큼)
+    const sellerCardNewQty = saleListing.photoCard.quantity - tradeQty;
     const proposerExisting = await tx.photoCard.findUnique({
       where: {
         templateId_ownerId: {
@@ -159,22 +166,38 @@ export const acceptProposal = async (proposalId, currentUserId) => {
     if (proposerExisting) {
       await tx.photoCard.update({
         where: { id: proposerExisting.id },
-        data: {
-          quantity: proposerExisting.quantity + saleListing.photoCard.quantity,
-        },
+        data: { quantity: proposerExisting.quantity + tradeQty },
       });
       await tx.photoCard.update({
         where: { id: saleListing.photoCard.id },
-        data: { quantity: 0, status: 'SOLD_OUT' },
+        data: {
+          quantity: sellerCardNewQty,
+          ...(sellerCardNewQty <= 0 ? { status: 'SOLD_OUT' } : {}),
+        },
       });
-    } else {
+    } else if (sellerCardNewQty <= 0) {
+      // 남은 수량 없음 → 소유권 이전
       await tx.photoCard.update({
         where: { id: saleListing.photoCard.id },
         data: { ownerId: offeredCard.ownerId },
       });
+    } else {
+      // 남은 수량 있음 → 제안자에게 새 레코드 생성, 판매자 카드 수량 감소
+      await tx.photoCard.create({
+        data: {
+          templateId: saleListing.photoCard.templateId,
+          ownerId: offeredCard.ownerId,
+          quantity: tradeQty,
+        },
+      });
+      await tx.photoCard.update({
+        where: { id: saleListing.photoCard.id },
+        data: { quantity: sellerCardNewQty },
+      });
     }
 
-    // 제안자 카드 → 판매자에게
+    // 제안자 카드 → 판매자에게 (tradeQty만큼)
+    const proposerCardNewQty = offeredCard.quantity - tradeQty;
     const sellerExisting = await tx.photoCard.findUnique({
       where: {
         templateId_ownerId: {
@@ -186,16 +209,33 @@ export const acceptProposal = async (proposalId, currentUserId) => {
     if (sellerExisting) {
       await tx.photoCard.update({
         where: { id: sellerExisting.id },
-        data: { quantity: sellerExisting.quantity + offeredCard.quantity },
+        data: { quantity: sellerExisting.quantity + tradeQty },
       });
       await tx.photoCard.update({
         where: { id: offeredCard.id },
-        data: { quantity: 0, status: 'SOLD_OUT' },
+        data: {
+          quantity: proposerCardNewQty,
+          ...(proposerCardNewQty <= 0 ? { status: 'SOLD_OUT' } : {}),
+        },
       });
-    } else {
+    } else if (proposerCardNewQty <= 0) {
+      // 남은 수량 없음 → 소유권 이전
       await tx.photoCard.update({
         where: { id: offeredCard.id },
         data: { ownerId: saleListing.sellerId },
+      });
+    } else {
+      // 남은 수량 있음 → 판매자에게 새 레코드 생성, 제안자 카드 수량 감소
+      await tx.photoCard.create({
+        data: {
+          templateId: offeredCard.templateId,
+          ownerId: saleListing.sellerId,
+          quantity: tradeQty,
+        },
+      });
+      await tx.photoCard.update({
+        where: { id: offeredCard.id },
+        data: { quantity: proposerCardNewQty },
       });
     }
 
