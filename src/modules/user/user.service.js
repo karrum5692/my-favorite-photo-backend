@@ -190,36 +190,27 @@ async function getMySalesCard(id, filters = {}) {
   if (Object.keys(templateFilter).length > 0) {
     whereCondition.photoCard = { template: templateFilter };
   }
-  // 3. 매진 여부(soldOut) 필터 조건 설정
+
   if (soldOut === 'SELLING') {
     whereCondition.status = 'SELLING';
-    whereCondition.exchangeGrade = null; // 순수 판매 목적 글만 타겟팅
-
-    // 탭에서만 교환 신청이 들어와서 '대기중(PENDING)'인 건을 제외합니다.
-    whereCondition.tradeProposals = {
-      none: {
-        status: 'PENDING',
-      },
-    };
   }
-
   if (soldOut === 'SOLD') {
     whereCondition.status = 'SOLD';
-    whereCondition.exchangeGrade = null; // 순수 판매 완료 글만 타겟팅
-
-    // 판매완료 상태에서는 교환 대기중(PENDING)인 제안이 엮여 있더라도
-    // 리스트에 정상적으로 노출되어야 하므로 tradeProposals 조건을 걸지 않고 비워둡니다.
   }
 
   const salesCard = await prisma.saleListing.findMany({
     where: whereCondition,
     skip: (page - 1) * limit,
     take: limit,
+    orderBy: { createdAt: 'desc' },
     select: {
       price: true,
       remainQuantity: true,
       status: true,
-      exchangeGrade: true,
+      tradeProposals: {
+        where: { status: 'PENDING' },
+        select: { id: true },
+      },
       photoCard: {
         select: {
           template: {
@@ -233,9 +224,7 @@ async function getMySalesCard(id, filters = {}) {
         },
       },
       seller: {
-        select: {
-          nickname: true,
-        },
+        select: { nickname: true },
       },
     },
   });
