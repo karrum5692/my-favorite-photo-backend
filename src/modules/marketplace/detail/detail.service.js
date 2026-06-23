@@ -162,7 +162,7 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
     });
 
     //상태 변화 조건
-    if (sellerQuantity.quantity === 0) {
+    if (isSoldOut && sellerQuantity.quantity === 0) {
       await tx.photoCard.update({
         where: {
           templateId_ownerId: {
@@ -176,7 +176,7 @@ async function postPurchase(saleId, purchaseQuantity, buyerId) {
       });
     }
 
-    if (sellerQuantity.quantity > 0) {
+    if (isSoldOut && sellerQuantity.quantity > 0) {
       await tx.photoCard.update({
         where: {
           templateId_ownerId: {
@@ -353,10 +353,17 @@ async function cancelSale(saleId, sellerId) {
       throw new HttpError(400, '판매 중인 게시글만 취소할 수 있습니다.');
     }
 
-    const cancel = await tx.saleListing.update({
-      where: { id: saleId },
+    const cancel = await tx.saleListing.updateMany({
+      where: { id: saleId, status: 'SELLING' },
       data: { status: 'CANCELLED' },
     });
+
+    if (cancel.count === 0) {
+      throw new HttpError(
+        400,
+        '이미 결제가 진행 중이거나 취소할 수 없는 게시글입니다.'
+      );
+    }
 
     //포토카드 status = owned
     await tx.photoCard.update({
