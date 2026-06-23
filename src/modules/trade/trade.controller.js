@@ -63,6 +63,24 @@ export const acceptProposal = async (req, res, next) => {
   }
 };
 
+// 교환 제안 취소
+export const cancelProposal = async (req, res, next) => {
+  try {
+    const proposalId = Number(req.params.proposalId);
+    const currentUserId = req.auth.userId;
+
+    const result = await tradeService.cancelProposal(proposalId, currentUserId);
+
+    res.status(200).json({
+      success: true,
+      message: '교환 제안 취소 성공',
+      data: result,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // 교환 거절
 export const rejectProposal = async (req, res, next) => {
   try {

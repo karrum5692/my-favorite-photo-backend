@@ -146,15 +146,52 @@ export const acceptProposal = async (proposalId, currentUserId) => {
       where: { id: proposal.offeredCardId },
     });
 
-    // 카드 교환 (소유권 변경)
-    await tx.photoCard.update({
-      where: { id: saleListing.photoCard.id },
-      data: { ownerId: offeredCard.ownerId },
+    // 카드 교환 (소유권 변경 or quantity merge)
+    // 판매자 카드 → 제안자에게
+    const proposerExisting = await tx.photoCard.findUnique({
+      where: {
+        templateId_ownerId: {
+          templateId: saleListing.photoCard.templateId,
+          ownerId: offeredCard.ownerId,
+        },
+      },
     });
-    await tx.photoCard.update({
-      where: { id: offeredCard.id },
-      data: { ownerId: saleListing.sellerId },
+    if (proposerExisting) {
+      await tx.photoCard.update({
+        where: { id: proposerExisting.id },
+        data: {
+          quantity: proposerExisting.quantity + saleListing.photoCard.quantity,
+        },
+      });
+      await tx.photoCard.delete({ where: { id: saleListing.photoCard.id } });
+    } else {
+      await tx.photoCard.update({
+        where: { id: saleListing.photoCard.id },
+        data: { ownerId: offeredCard.ownerId },
+      });
+    }
+
+    // 제안자 카드 → 판매자에게
+    const sellerExisting = await tx.photoCard.findUnique({
+      where: {
+        templateId_ownerId: {
+          templateId: offeredCard.templateId,
+          ownerId: saleListing.sellerId,
+        },
+      },
     });
+    if (sellerExisting) {
+      await tx.photoCard.update({
+        where: { id: sellerExisting.id },
+        data: { quantity: sellerExisting.quantity + offeredCard.quantity },
+      });
+      await tx.photoCard.delete({ where: { id: offeredCard.id } });
+    } else {
+      await tx.photoCard.update({
+        where: { id: offeredCard.id },
+        data: { ownerId: saleListing.sellerId },
+      });
+    }
 
     const result = await tx.tradeProposal.update({
       where: { id: proposalId },
@@ -183,6 +220,25 @@ export const acceptProposal = async (proposalId, currentUserId) => {
     console.log('알림 실패:', err);
   }
   return accepted;
+};
+
+/**
+ * 교환 제안 취소 (제안자 본인)
+ */
+export const cancelProposal = async (proposalId, currentUserId) => {
+  const proposal = await prisma.tradeProposal.findUnique({
+    where: { id: proposalId },
+  });
+  if (!proposal || proposal.status !== 'PENDING')
+    throw new Error('취소할 수 없는 제안입니다.');
+
+  if (proposal.proposerId !== currentUserId)
+    throw new Error('권한이 없습니다.');
+
+  return prisma.tradeProposal.update({
+    where: { id: proposalId },
+    data: { status: 'REJECTED' },
+  });
 };
 
 /**
