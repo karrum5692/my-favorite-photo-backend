@@ -25,6 +25,13 @@ router.get(
   tradeController.getMySentProposals
 );
 
+// 교환 제안 취소
+router.patch(
+  '/proposals/:proposalId/cancel',
+  auth.verifyAccessToken,
+  tradeController.cancelProposal
+);
+
 // 교환 수락
 router.patch(
   '/proposals/:proposalId/accept',
