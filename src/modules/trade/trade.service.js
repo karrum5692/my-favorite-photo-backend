@@ -163,7 +163,10 @@ export const acceptProposal = async (proposalId, currentUserId) => {
           quantity: proposerExisting.quantity + saleListing.photoCard.quantity,
         },
       });
-      await tx.photoCard.delete({ where: { id: saleListing.photoCard.id } });
+      await tx.photoCard.update({
+        where: { id: saleListing.photoCard.id },
+        data: { quantity: 0 },
+      });
     } else {
       await tx.photoCard.update({
         where: { id: saleListing.photoCard.id },
@@ -185,7 +188,10 @@ export const acceptProposal = async (proposalId, currentUserId) => {
         where: { id: sellerExisting.id },
         data: { quantity: sellerExisting.quantity + offeredCard.quantity },
       });
-      await tx.photoCard.delete({ where: { id: offeredCard.id } });
+      await tx.photoCard.update({
+        where: { id: offeredCard.id },
+        data: { quantity: 0 },
+      });
     } else {
       await tx.photoCard.update({
         where: { id: offeredCard.id },
