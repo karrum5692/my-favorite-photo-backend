@@ -18,11 +18,32 @@
 
 ## Tech Stack
 
-**Backend** Node.js · Express · TypeScript · Prisma ORM · PostgreSQL
-**Auth** JWT · OAuth 2.0
-**Logging** Winston · Morgan · Sentry
-**Convention** ESLint · Prettier · Husky · Commitlint · CodeRabbit
+**Backend**
 
+![Node.js](https://img.shields.io/badge/Node.js-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=flat-square&logo=express&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=flat-square&logo=prisma&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+
+**Auth**
+
+![JWT](https://img.shields.io/badge/JWT-000000?style=flat-square&logo=jsonwebtokens&logoColor=white)
+![OAuth 2.0](https://img.shields.io/badge/OAuth_2.0-EB5424?style=flat-square&logo=auth0&logoColor=white)
+
+**Logging & Monitoring**
+
+![Winston](https://img.shields.io/badge/Winston-231F20?style=flat-square)
+![Morgan](https://img.shields.io/badge/Morgan-231F20?style=flat-square)
+![Sentry](https://img.shields.io/badge/Sentry-362D59?style=flat-square&logo=sentry&logoColor=white)
+
+**Convention**
+
+![ESLint](https://img.shields.io/badge/ESLint-4B32C3?style=flat-square&logo=eslint&logoColor=white)
+![Prettier](https://img.shields.io/badge/Prettier-F7B93E?style=flat-square&logo=prettier&logoColor=black)
+![Husky](https://img.shields.io/badge/Husky-42B983?style=flat-square)
+![Commitlint](https://img.shields.io/badge/Commitlint-000000?style=flat-square&logo=commitlint&logoColor=white)
+![CodeRabbit](https://img.shields.io/badge/CodeRabbit-FF570A?style=flat-square)
 ---
 
 ## 주요 작업
